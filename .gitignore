@@ -1,0 +1,76 @@
+# 本機工作工具
+.worktrees/
+.agents/
+.codex/
+
+# .NET 建置與發佈產物（參考 dotnet new gitignore）
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+artifacts/
+publish/
+*.pdb
+*.tmp
+*_wpftmp.csproj
+
+# IDE 快取與個人設定；共用設定可納入版本控制
+.vs/
+.idea/
+_ReSharper*/
+*.DotSettings.user
+*.sln.iml
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.userprefs
+*.code-workspace
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# 測試、覆蓋率與效能測量結果
+[Tt]est[Rr]esult*/
+test-results/
+*.trx
+coverage/
+coverage*.json
+coverage*.xml
+coverage*.info
+*.coverage
+*.coveragexml
+BenchmarkDotNet.Artifacts/
+
+# NuGet 還原快取與封裝產物；packages.lock.json 應保留
+**/[Pp]ackages/*
+!**/[Pp]ackages/build/
+*.nupkg
+*.snupkg
+
+# 本機資料庫、日誌與發佈設定
+*.db
+*.db-wal
+*.db-shm
+*.log
+*.binlog
+*.pubxml
+*.pubxml.user
+*.publishsettings
+
+# 本機環境設定與金鑰；範例設定可納入版本控制
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.pfx
+*.p12
+
+# 作業系統產生的檔案
+.DS_Store
+Thumbs.db
+[Dd]esktop.ini

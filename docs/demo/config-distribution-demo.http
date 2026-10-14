@@ -1,0 +1,118 @@
+# 集中式設定演示：只連線至本機、只使用非敏感資料。
+# 啟動與重啟步驟見 http-demo-guide.md；請逐段執行，不要使用「執行全部」。
+# 下列版本號假設使用新資料庫，且每個寫入請求只執行一次。
+# 本檔案不啟動程序，也不自動判定測試通過。
+
+@centralUrl = http://127.0.0.1:5180
+@demoUrl = http://127.0.0.1:5181
+@centralEnvironment = HttpDemo
+
+### 01. 確認中央服務已就緒
+# 預期：200，status 為 ready。先確認這是你在終端機 A 啟動的服務。
+GET {{centralUrl}}/health/ready
+Accept: application/json
+
+### 02. 建立第一版中央值
+# 預期：201，version 為 1，state 為 Present；命令回應不包含設定值。
+POST {{centralUrl}}/api/v1/management/configurations/set
+Content-Type: application/json
+Accept: application/json
+
+{
+  "environment": "{{centralEnvironment}}",
+  "key": "Demo:CentralRequiredMessage",
+  "value": "snapshot-v1"
+}
+
+### 03. 查詢中央目前值
+# 預期：200，value 為 snapshot-v1。
+GET {{centralUrl}}/api/v1/management/configurations/current?environment={{centralEnvironment}}&key=Demo%3ACentralRequiredMessage
+Accept: application/json
+
+### 04. 查看 Client 啟動時使用的分發介面
+# 預期：200，values 包含必要鍵的 snapshot-v1。
+# missingKeys 包含 Demo:FallbackAllowedMessage；後備值由 Client／本機設定決定。
+POST {{centralUrl}}/api/v1/distribution/configurations/resolve
+Content-Type: application/json
+Accept: application/json
+
+{
+  "environment": "{{centralEnvironment}}",
+  "keys": [
+    "Demo:CentralRequiredMessage",
+    "Demo:FallbackAllowedMessage"
+  ]
+}
+
+### 05. 暫停：依操作說明啟動 Demo，再執行此請求
+# 預期：200，scope 為 Demo，Cache-Control 為 no-store。
+# effectiveValues：CentralRequiredMessage=snapshot-v1、FallbackAllowedMessage=local-fallback、LocalOnlyMessage=local-only。
+GET {{demoUrl}}/api/v1/demo/effective-configuration
+Accept: application/json
+
+### 06. 將中央值更新為第二版
+# 預期：201，version 為 2，state 為 Present。
+POST {{centralUrl}}/api/v1/management/configurations/set
+Content-Type: application/json
+Accept: application/json
+
+{
+  "environment": "{{centralEnvironment}}",
+  "key": "Demo:CentralRequiredMessage",
+  "value": "snapshot-v2"
+}
+
+### 07. 確認中央已更新
+# 預期：200，value 為 snapshot-v2。
+GET {{centralUrl}}/api/v1/management/configurations/current?environment={{centralEnvironment}}&key=Demo%3ACentralRequiredMessage
+Accept: application/json
+
+### 08. 不重啟 Demo，觀察原本的快照
+# 預期：200，CentralRequiredMessage 仍為 snapshot-v1。
+GET {{demoUrl}}/api/v1/demo/effective-configuration
+Accept: application/json
+
+### 09. 暫停：只重啟 Demo，再執行此請求
+# 預期：200，CentralRequiredMessage 變為 snapshot-v2。
+GET {{demoUrl}}/api/v1/demo/effective-configuration
+Accept: application/json
+
+### 10. 移除中央必要值
+# 預期：201，version 為 3，state 為 Removed。這不會實體刪除歷史。
+# 暫時不要重啟 Demo；必要鍵缺值會使啟動失敗。先完成 13 的還原。
+POST {{centralUrl}}/api/v1/management/configurations/remove
+Content-Type: application/json
+Accept: application/json
+
+{
+  "environment": "{{centralEnvironment}}",
+  "key": "Demo:CentralRequiredMessage"
+}
+
+### 11. 查詢已移除的目前狀態
+# 預期：200（不是 404），state 為 Removed，value 為 null。
+GET {{centralUrl}}/api/v1/management/configurations/current?environment={{centralEnvironment}}&key=Demo%3ACentralRequiredMessage
+Accept: application/json
+
+### 12. 查看附加式版本歷史
+# 預期：200，versions 由新到舊排列：3 Remove、2 Set、1 Set。
+GET {{centralUrl}}/api/v1/management/configurations/history?environment={{centralEnvironment}}&key=Demo%3ACentralRequiredMessage
+Accept: application/json
+
+### 13. 以新的 Set 還原設定值
+# 預期：201，version 為 4，state 為 Present。
+# snapshot-v3 是設定值的名稱，不是 Entry Version；Remove 也會占用一個版本。
+POST {{centralUrl}}/api/v1/management/configurations/set
+Content-Type: application/json
+Accept: application/json
+
+{
+  "environment": "{{centralEnvironment}}",
+  "key": "Demo:CentralRequiredMessage",
+  "value": "snapshot-v3"
+}
+
+### 14. 暫停：重啟 Demo，再確認還原結果
+# 預期：200，CentralRequiredMessage 為 snapshot-v3，後備值仍為 local-fallback。
+GET {{demoUrl}}/api/v1/demo/effective-configuration
+Accept: application/json

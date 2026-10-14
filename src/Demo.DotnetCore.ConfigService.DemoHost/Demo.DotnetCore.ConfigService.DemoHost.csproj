@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <NoDefaultLaunchSettingsFile>True</NoDefaultLaunchSettingsFile>
+    <UsePackagedClient Condition="'$(UsePackagedClient)' == ''">false</UsePackagedClient>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(UsePackagedClient)' != 'true'">
+    <ProjectReference Include="..\Demo.DotnetCore.ConfigService.Client\Demo.DotnetCore.ConfigService.Client.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(UsePackagedClient)' == 'true'">
+    <PackageReference Include="Demo.DotnetCore.ConfigService.Client" VersionOverride="$(DemoClientPackageVersion)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Demo.DotnetCore.ConfigService.DemoHost.Tests" />
+  </ItemGroup>
+
+  <Target Name="ValidateDemoClientReferenceMode" BeforeTargets="CollectPackageReferences;PrepareForBuild">
+    <Error
+        Condition="'$(UsePackagedClient)' != 'true' and '$(UsePackagedClient)' != 'false'"
+        Text="UsePackagedClient must be either true or false." />
+    <Error
+        Condition="'$(UsePackagedClient)' == 'true' and '$(DemoClientPackageVersion)' == ''"
+        Text="DemoClientPackageVersion is required when UsePackagedClient=true." />
+  </Target>
+</Project>
