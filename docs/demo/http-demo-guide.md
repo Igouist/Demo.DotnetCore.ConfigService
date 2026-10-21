@@ -93,4 +93,11 @@ dotnet src/Demo.DotnetCore.ConfigService.DemoHost/bin/Release/net8.0/Demo.Dotnet
 
 在終端機 B、C 按 `Ctrl+C` 停止兩個 Demo，再在終端機 A 停止 Central。這個演示不會自動清理。
 
-確認兩個程序都已結束後，可手動移除終端機 A 顯示的本次 `config-http-demo-*` 目錄，包含 SQLite 資料庫及可能存在的 WAL／SHM 檔案。只移除本次建立的確切目錄，不要刪除整個系統暫存目錄。
+確認三個程序都已結束後，可手動移除終端機 A 顯示的本次 `config-http-demo-*` 目錄，包含 SQLite 資料庫及可能存在的 WAL／SHM 檔案。只移除本次建立的確切目錄，不要刪除整個系統暫存目錄。若終端機 A 仍是啟動 Central 的同一個 PowerShell 工作階段，`$demoSession` 仍指向該目錄，可在終端機 A 執行：
+
+```powershell
+Remove-Item -LiteralPath $demoSession -Recurse
+Test-Path -LiteralPath $demoSession
+```
+
+`Test-Path` 回傳 `False` 即表示已移除。
