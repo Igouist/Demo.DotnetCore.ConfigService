@@ -13,6 +13,7 @@ await app.Services
     .InitializeAsync(app.Lifetime.ApplicationStopping);
 
 app.UseMiddleware<CentralExceptionMiddleware>();
+app.UseCentralHostOpenApi();
 app.MapControllers();
 app.MapCentralHostReadinessProbe();
 

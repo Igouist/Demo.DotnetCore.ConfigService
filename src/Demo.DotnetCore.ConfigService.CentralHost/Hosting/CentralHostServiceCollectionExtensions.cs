@@ -57,6 +57,7 @@ public static class CentralHostServiceCollectionExtensions
             options.SuppressModelStateInvalidFilter = true);
         services.AddControllers().AddJsonOptions(options =>
             options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+        services.AddCentralHostOpenApi();
 
         return services;
     }
