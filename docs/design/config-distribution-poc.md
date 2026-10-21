@@ -494,7 +494,7 @@ CREATE INDEX IX_ConfigurationEntryVersions_Latest
 
 這兩種 SQLite 結果都沒有應用程式層級的重試。`Microsoft.Data.Sqlite` 可能在操作處於 busy 或 locked 時套用共用的五秒 `Default Timeout`，之後才回傳最終結果。已接受的設計修正了 POC-049 先前假設提供者可以對 Busy 等待、但對 Locked 立即回傳的說法；此公開提供者沒有為這些結果類別提供獨立的等待政策，決策紀錄保留此修訂歷程。
 
-原始 SQLite 診斷保留在伺服器端，絕不複製至 HTTP 回應。作用中的 `-wal` 與 `-shm` 附屬檔案屬於預期行為，主機執行時不得刪除。
+原始 SQLite 診斷保留在伺服器端，絕不複製至 HTTP 回應。伺服器端 Error 日誌以 `Diagnostics` 欄位記錄例外型別鏈；`SqliteException` 另含 SQLite 錯誤碼與引擎訊息，這些訊息只提及結構描述物件與條件約束名稱。一般例外訊息可能含有設定值，依 POC-039 不寫入日誌；非預期失敗另記錄最內層例外的堆疊追蹤。就緒狀態檢查失敗時，相同的 `Diagnostics` 文字只進入健康檢查日誌，不出現在就緒狀態回應。資料庫初始化失敗會保留原始例外作為 `InnerException`，只輸出至操作者主控台。作用中的 `-wal` 與 `-shm` 附屬檔案屬於預期行為，主機執行時不得刪除。
 
 就緒狀態介面將每個已完成的相依項目失敗，對應至安全的彙總 `503 unavailable` 回應，而非管理介面或設定分發介面的持久化 Problem Details 回應。
 
@@ -665,6 +665,8 @@ Resolve 是沒有副作用的唯讀 POST，因此可以安全重試。伺服器�
 若無法識別唯一的標準環境 JSON 錨點，登錄會失敗，不會猜測。在具型別的失敗契約中，此情況分類為 `InvalidConfigurationPipeline`。
 
 中央設定提供者（Provider）是不可變的啟動快照。它不執行輪詢、更新、推播訂閱、重新載入權杖更新，或最後已知良好設定的持久化。中央的 Set 或 Remove 只有在使用端重新啟動後才會可見。
+
+「不可變」指快照內容不會再與中央同步。程式內透過 `IConfiguration[key] = value` 的寫入（例如 `WebHost.UseUrls`、`UseSetting`）會呼叫每個設定提供者的 `Set`；快照設定提供者沿用 .NET 預設的記憶體內行為接受此寫入，不拋出例外，也不影響中央值或其他由同一來源建立的提供者。
 
 ## 9. 用戶端診斷與取消
 

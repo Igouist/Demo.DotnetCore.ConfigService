@@ -84,9 +84,10 @@ internal sealed class SqliteDatabaseInitializer
         {
             throw new InvalidOperationException(IncompatibleMessage);
         }
-        catch
+        catch (Exception exception)
         {
-            throw new InvalidOperationException(InitializationFailedMessage);
+            // Startup failures reach only the operator console, never HTTP, so the root cause is kept.
+            throw new InvalidOperationException(InitializationFailedMessage, exception);
         }
     }
 

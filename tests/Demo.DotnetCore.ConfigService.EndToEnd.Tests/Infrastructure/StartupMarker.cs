@@ -10,7 +10,8 @@ internal sealed record StartupMarker(
     string? FailureKind,
     int? HttpStatusCode,
     double? DelayMs,
-    double? ElapsedMs)
+    double? ElapsedMs,
+    string[]? MissingRequiredKeys = null)
 {
     private const string ExpectedSource = "demo-central-config";
 
@@ -37,7 +38,8 @@ internal sealed record StartupMarker(
                 ReadString(root, "failureKind"),
                 ReadInt32(root, "httpStatusCode"),
                 ReadDouble(root, "delayMs"),
-                ReadDouble(root, "elapsedMs"));
+                ReadDouble(root, "elapsedMs"),
+                ReadStringArray(root, "missingRequiredKeys"));
             return true;
         }
         catch (JsonException)
@@ -59,6 +61,18 @@ internal sealed record StartupMarker(
 
     private static string? ReadString(JsonElement root, string name) =>
         TryReadString(root, name, out string? value) ? value : null;
+
+    private static string[]? ReadStringArray(JsonElement root, string name)
+    {
+        if (!root.TryGetProperty(name, out JsonElement property)
+            || property.ValueKind != JsonValueKind.Array
+            || property.EnumerateArray().Any(item => item.ValueKind != JsonValueKind.String))
+        {
+            return null;
+        }
+
+        return property.EnumerateArray().Select(item => item.GetString()!).ToArray();
+    }
 
     private static int? ReadInt32(JsonElement root, string name) =>
         root.TryGetProperty(name, out JsonElement property)

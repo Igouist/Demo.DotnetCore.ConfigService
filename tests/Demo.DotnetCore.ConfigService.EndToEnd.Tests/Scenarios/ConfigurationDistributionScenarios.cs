@@ -133,6 +133,7 @@ public sealed class ConfigurationDistributionScenarios(PackagedDemoFixture fixtu
                     TimeSpan.FromSeconds(15));
 
                 Assert.Equal("MissingRequiredKeys", failed.FailureKind);
+                Assert.Equal(new[] { "Demo:CentralRequiredMessage" }, failed.MissingRequiredKeys);
                 Assert.Equal<int?>(1, failed.AttemptCount);
                 Assert.NotEqual(0, exit.ExitCode);
             });

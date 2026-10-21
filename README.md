@@ -113,7 +113,7 @@ Demo.DotnetCore.ConfigService.sln
 
 - 安裝 Git，以執行版本控制與 whitespace 檢查。
 - 安裝 PowerShell，以執行人工示範手冊。
-- 安裝符合 [`global.json`](global.json) 的 .NET SDK。所有 source 與 test projects 都以 `net8.0` 為目標。
+- 安裝任一 .NET SDK 10.0.x（[`global.json`](global.json) 要求 10.0.100 以上的 10.0 版本；SDK 8 的編譯器與格式檢查不相容），以及 .NET 8 ASP.NET Core 執行階段。所有 source 與 test projects 都以 `net8.0` 為目標。
 - 從包含 `Demo.DotnetCore.ConfigService.sln` 的 repository root 執行下列命令。
 
 ### 完整驗證
@@ -132,7 +132,7 @@ git diff --check
 
 ## 逐步呼叫 API 演示
 
-向團隊逐步展示時，使用 [HTTP 演示操作說明](docs/demo/http-demo-guide.md) 搭配 [HTTP 呼叫檔](docs/demo/config-distribution-demo.http)。依序發送請求，觀察中央值、本機後備值、啟動快照與版本歷史。操作說明提供持續運作的服務啟動方式，並標示需要手動重啟 Demo 的步驟。
+向團隊逐步展示時，使用 [HTTP 演示操作說明](docs/demo/http-demo-guide.md) 搭配 [HTTP 呼叫檔](docs/demo/config-distribution-demo.http)。依序發送請求，觀察兩個使用端共用同一份中央值、本機後備值、啟動快照、必要設定鍵缺值時的啟動失敗，以及版本歷史。操作說明提供持續運作的服務啟動方式，並標示需要手動重啟 Demo 的步驟。
 
 這個短演示使用 `ProjectReference` 連結 Client，不取代 packaged E2E tests 或下列完整示範。
 

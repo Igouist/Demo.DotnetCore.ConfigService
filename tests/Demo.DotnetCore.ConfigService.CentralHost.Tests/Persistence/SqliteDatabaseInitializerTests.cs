@@ -198,6 +198,7 @@ public sealed class SqliteDatabaseInitializerTests
             initializer.InitializeAsync(CancellationToken.None));
 
         AssertSafeMessage(exception, InitializationFailedMessage, databasePath);
+        Assert.NotNull(exception.InnerException);
     }
 
     [Fact]

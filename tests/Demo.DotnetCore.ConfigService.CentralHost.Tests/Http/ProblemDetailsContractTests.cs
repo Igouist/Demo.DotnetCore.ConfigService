@@ -308,10 +308,11 @@ public sealed class ProblemDetailsContractTests
         Assert.Null(error.Exception);
         AssertExactErrorLog(
             error,
-            $"Central Host persistence failure. TraceIdentifier: {problem.TraceId}; PersistenceFailureCategory: {category}",
-            "Central Host persistence failure. TraceIdentifier: {TraceIdentifier}; PersistenceFailureCategory: {PersistenceFailureCategory}",
+            $"Central Host persistence failure. TraceIdentifier: {problem.TraceId}; PersistenceFailureCategory: {category}; Diagnostics: PersistenceFailureException -> InvalidOperationException",
+            "Central Host persistence failure. TraceIdentifier: {TraceIdentifier}; PersistenceFailureCategory: {PersistenceFailureCategory}; Diagnostics: {Diagnostics}",
             ("TraceIdentifier", problem.TraceId),
-            ("PersistenceFailureCategory", category));
+            ("PersistenceFailureCategory", category),
+            ("Diagnostics", "PersistenceFailureException -> InvalidOperationException"));
         AssertDoesNotContain(problem.Body, "persistence-exception-sentinel", "configuration-value-sentinel");
         AssertLogsDoNotContain(loggerProvider, "persistence-exception-sentinel", "configuration-value-sentinel");
     }
@@ -344,11 +345,15 @@ public sealed class ProblemDetailsContractTests
 
         var error = Assert.Single(loggerProvider.Entries, entry => entry.LogLevel == LogLevel.Error);
         Assert.Null(error.Exception);
+        var stackTrace = error.GetStructuredValue("StackTrace")?.ToString();
+        Assert.False(string.IsNullOrWhiteSpace(stackTrace));
         AssertExactErrorLog(
             error,
-            $"Central Host unexpected failure. TraceIdentifier: {problem.TraceId}",
-            "Central Host unexpected failure. TraceIdentifier: {TraceIdentifier}",
-            ("TraceIdentifier", problem.TraceId));
+            $"Central Host unexpected failure. TraceIdentifier: {problem.TraceId}; Diagnostics: InvalidOperationException; StackTrace: {stackTrace}",
+            "Central Host unexpected failure. TraceIdentifier: {TraceIdentifier}; Diagnostics: {Diagnostics}; StackTrace: {StackTrace}",
+            ("TraceIdentifier", problem.TraceId),
+            ("Diagnostics", "InvalidOperationException"),
+            ("StackTrace", stackTrace));
         AssertDoesNotContain(
             problem.Body,
             "configuration-value-sentinel",
@@ -400,11 +405,15 @@ public sealed class ProblemDetailsContractTests
         Assert.Equal(0, problemDetailsService.WriteCallCount);
         var error = Assert.Single(loggerProvider.Entries, entry => entry.LogLevel == LogLevel.Error);
         Assert.Null(error.Exception);
+        var stackTrace = error.GetStructuredValue("StackTrace")?.ToString();
+        Assert.False(string.IsNullOrWhiteSpace(stackTrace));
         AssertExactErrorLog(
             error,
-            "Central Host failure after the response started. TraceIdentifier: response-started-trace",
-            "Central Host failure after the response started. TraceIdentifier: {TraceIdentifier}",
-            ("TraceIdentifier", "response-started-trace"));
+            $"Central Host failure after the response started. TraceIdentifier: response-started-trace; Diagnostics: InvalidOperationException; StackTrace: {stackTrace}",
+            "Central Host failure after the response started. TraceIdentifier: {TraceIdentifier}; Diagnostics: {Diagnostics}; StackTrace: {StackTrace}",
+            ("TraceIdentifier", "response-started-trace"),
+            ("Diagnostics", "InvalidOperationException"),
+            ("StackTrace", stackTrace));
         AssertLogsDoNotContain(
             loggerProvider,
             "response-started-exception-sentinel",

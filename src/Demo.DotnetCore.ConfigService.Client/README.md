@@ -50,4 +50,4 @@ await builder.AddCentralConfigAsync(startupLogger, cancellationToken);
 
 必須明確設定 `Enabled`。`false` 代表刻意選擇只使用本機設定，套件不執行中央載入。啟用時，中央系統失敗或回應無效都會使啟動失敗；只有有效回應中個別缺少中央值的允許後備設定鍵，才適用後備行為。
 
-中央設定提供者是不可變的啟動快照，插入在 `appsettings.{HostEnvironment}.json` 之後。User Secrets、環境變數、命令列引數及後續加入的來源仍具有較高優先序。重新啟動使用端應用程式，才能讀取中央設定的變更。
+中央設定提供者是不可變的啟動快照，插入在 `appsettings.{HostEnvironment}.json` 之後。User Secrets、環境變數、命令列引數及後續加入的來源仍具有較高優先序。重新啟動使用端應用程式，才能讀取中央設定的變更。程式內以 `IConfiguration[key] = value` 寫入的值（例如 `builder.WebHost.UseUrls(...)`）照常生效，只存在於該程序的記憶體中，不會寫回中央。

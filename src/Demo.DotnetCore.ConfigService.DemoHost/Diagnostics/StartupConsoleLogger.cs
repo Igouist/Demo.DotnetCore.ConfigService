@@ -119,7 +119,8 @@ internal sealed class StartupConsoleLogger : ILogger
             case LogLevel.Error:
                 if (!TryReadText(fields, "FailureKind", out string errorFailureKind)
                     || !TryReadInt32(fields, "AttemptCount", out int errorAttemptCount)
-                    || !TryReadDouble(fields, "ElapsedMs", out double errorElapsedMs))
+                    || !TryReadDouble(fields, "ElapsedMs", out double errorElapsedMs)
+                    || !TryReadTextList(fields, "MissingRequiredKeys", out string[] missingRequiredKeys))
                 {
                     return false;
                 }
@@ -136,7 +137,8 @@ internal sealed class StartupConsoleLogger : ILogger
                     }
                         ? (int?)statusCode
                         : null,
-                    elapsedMs = errorElapsedMs
+                    elapsedMs = errorElapsedMs,
+                    missingRequiredKeys
                 };
                 return true;
             default:
@@ -225,6 +227,21 @@ internal sealed class StartupConsoleLogger : ILogger
         }
 
         value = string.Empty;
+        return false;
+    }
+
+    private static bool TryReadTextList(
+        IReadOnlyDictionary<string, object?> fields,
+        string name,
+        out string[] values)
+    {
+        if (fields.TryGetValue(name, out object? rawValue) && rawValue is IEnumerable<string> textValues)
+        {
+            values = textValues.ToArray();
+            return true;
+        }
+
+        values = [];
         return false;
     }
 

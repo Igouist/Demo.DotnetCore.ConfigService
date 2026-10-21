@@ -86,6 +86,24 @@ public sealed class CentralConfigRegistrationTests
     }
 
     [Fact]
+    public async Task Configuration_writes_after_registration_succeed_and_keep_the_central_value()
+    {
+        using var host = EnabledHost();
+        var transport = new FakeDistributionTransport();
+        transport.EnqueueResponse(Ok(
+            "{\"values\":{\"Demo:Required\":\"central\",\"Demo:Empty\":\"\"},\"missingKeys\":[\"Demo:Fallback\"]}"));
+        var registration = CreateRegistration(transport, new FakeTimeProvider(), new FixedRetryJitter());
+
+        await registration.RegisterAsync(host.Builder, null, CancellationToken.None);
+
+        // WebHost.UseUrls and UseSetting write through the indexer, which calls Set on every provider.
+        host.Builder.Configuration["urls"] = "http://127.0.0.1:5299";
+
+        Assert.Equal("http://127.0.0.1:5299", host.Builder.Configuration["urls"]);
+        Assert.Equal("central", host.Builder.Configuration["Demo:Required"]);
+    }
+
+    [Fact]
     public async Task Failed_acquisition_leaves_the_pipeline_unchanged()
     {
         using var host = EnabledHost();

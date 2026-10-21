@@ -1,25 +1,24 @@
-using System.Collections.ObjectModel;
 using Microsoft.Extensions.Configuration;
 
 namespace Demo.DotnetCore.ConfigService.Client;
 
 internal sealed class CentralConfigSnapshotSource : IConfigurationSource
 {
-    private readonly IDictionary<string, string?> _values;
+    private readonly Dictionary<string, string?> _values;
 
     internal CentralConfigSnapshotSource(IReadOnlyDictionary<string, string> values)
     {
-        var preparedValues = new Dictionary<string, string?>(
+        _values = new Dictionary<string, string?>(
             values.Count,
             StringComparer.OrdinalIgnoreCase);
         foreach (KeyValuePair<string, string> pair in values)
         {
-            preparedValues.Add(pair.Key, pair.Value);
+            _values.Add(pair.Key, pair.Value);
         }
-
-        _values = new ReadOnlyDictionary<string, string?>(preparedValues);
     }
 
+    // Each provider gets its own copy so in-memory writes to one built provider never leak into the source.
     public IConfigurationProvider Build(IConfigurationBuilder builder) =>
-        new CentralConfigSnapshotProvider(_values);
+        new CentralConfigSnapshotProvider(
+            new Dictionary<string, string?>(_values, StringComparer.OrdinalIgnoreCase));
 }
