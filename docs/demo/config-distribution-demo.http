@@ -9,7 +9,7 @@
 @centralEnvironment = HttpDemo
 
 ### 01. 確認中央服務已就緒
-# 預期：200，status 為 ready。先確認這是你在終端機 A 啟動的服務。
+# 預期：200，status 為 ready。先確認這是你這次啟動的 Central。
 GET {{centralUrl}}/health/ready
 Accept: application/json
 

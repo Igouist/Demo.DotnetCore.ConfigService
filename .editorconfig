@@ -25,6 +25,11 @@ indent_style = space
 # 註：dotnet new 的模板預設是 false，但 dotnet/runtime 自己設 true。
 insert_final_newline = true
 
+# PowerShell 腳本存成含 BOM 的 UTF-8。Windows PowerShell 5.1 讀取沒有 BOM 的
+# 腳本時會用系統字碼頁解碼，中文訊息會變成亂碼，甚至讓字串無法解析。
+[*.ps1]
+charset = utf-8-bom
+
 # Xml files
 [*.xml]
 indent_size = 2

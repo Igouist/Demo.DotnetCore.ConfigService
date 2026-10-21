@@ -75,6 +75,7 @@
 | POC-056 | 已延後（Deferred） | 可能的 .NET Framework 4.8 第二階段 Receiver 範圍 |
 | POC-057 | 已接受（Accepted） | 最小化的中央就緒狀態介面與啟動識別值 |
 | POC-058 | 已接受（Accepted） | 列出中央環境設定鍵的管理介面 |
+| POC-059 | 已接受（Accepted） | 以 PowerShell 腳本一次啟動 HTTP 演示 |
 
 ## 決策
 
@@ -907,6 +908,28 @@ TLS、專用管理連接埠、健康狀態發布器、詳細健康報告、
 - **空環境回傳空陣列。** 中央不登記中央環境，也不登記使用端（POC-003）；沒有項目的環境與從未使用的環境無法區分，兩者都是 `200 OK`。
 
 此介面與其他管理介面一樣不驗證身分（POC-040），只用於隔離環境的非敏感資料。它不改變 Resolve 的契約，也不讓中央得知哪些使用端讀取了哪些設定鍵。
+
+### POC-059 — 以 PowerShell 腳本一次啟動 HTTP 演示
+
+**狀態：** 已接受（Accepted），適用於本 POC
+
+**日期：** 2026-10-21
+
+HTTP 演示原本要開三個終端機，依序啟動 Central、Demo A、Demo B，並在指定步驟手動 `Ctrl+C` 再重啟 Demo。對第一次接觸的團隊成員，這是最大的上手門檻。新增 [`scripts/start-http-demo.ps1`](../../scripts/start-http-demo.ps1)，以一個指令建置並啟動三個程序，在同一個視窗以單一字母重啟 Demo，結束時停止程序並刪除暫存資料。
+
+比較過的方案：
+
+- **.NET Aspire AppHost：** 有儀表板，可在畫面上重啟單一 Demo、看日誌。但要多一個 AppHost 專案與 Aspire 套件，還會加入服務探索與遙測等與本 POC 無關的概念；觀眾容易把 Aspire 的機制誤認為集中式設定的一部分。
+- **`docker compose`：** 不依賴 Aspire，但每位成員都要安裝並啟動 Docker，還要維護映像檔；Windows 上安裝與執行 Docker Desktop 也會成為新的門檻。
+- **PowerShell 腳本（採用）：** 只需要演示原本就需要的 .NET SDK 與 PowerShell，沒有新的相依套件。腳本只是把操作說明的手動命令串起來，團隊可直接讀懂它做了什麼。缺點是重啟與日誌檢視要自己處理：腳本以指令選單重啟 Demo，日誌寫入暫存目錄的檔案，只摘要 Demo 的 `demo-central-config` 標記。
+
+腳本的界線：
+
+- **不寫入示範資料。** 中央資料完全由 `.http` 寫入，01–17 的版本號與預期結果和手動流程相同；腳本因此要等使用者完成 02 才啟動 Demo，否則必要設定鍵缺值會使 Demo 啟動失敗。
+- **同時支援 Windows PowerShell 5.1 與 PowerShell 7。** 團隊的 Windows 電腦不一定裝有 PowerShell 7。腳本因此不使用 `ProcessStartInfo.ArgumentList` 等只在 .NET Core 存在的 API，自行替引數加引號，並以含 BOM 的 UTF-8 儲存。
+- **以強制結束停止程序。** 演示只使用暫存的非敏感資料，結束後整個目錄會刪除，不需要等待正常關機。
+
+腳本不改變 Central、Client 或 Demo 的行為與 HTTP 契約，也不取代使用 packaged Client 的 E2E 或完整示範手冊。操作說明保留不使用腳本的手動流程作為附錄。
 
 ## 尚未解決的設計問題
 
