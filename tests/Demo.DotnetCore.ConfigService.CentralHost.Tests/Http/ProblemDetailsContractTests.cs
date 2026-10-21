@@ -278,14 +278,14 @@ public sealed class ProblemDetailsContractTests
     [Theory]
     [InlineData((int)PersistenceFailureCategory.Locked)]
     [InlineData((int)PersistenceFailureCategory.Other)]
-    public async Task Injected_persistence_failures_return_safe_problem_details_and_fixed_error_logs(int categoryValue)
+    public async Task Injected_persistence_failures_return_safe_problem_details_and_log_the_exception(int categoryValue)
     {
         var category = (PersistenceFailureCategory)categoryValue;
         var loggerProvider = new CapturingLoggerProvider();
-        var store = new ThrowingConfigurationEntryStore(
-            new PersistenceFailureException(
-                category,
-                new InvalidOperationException("persistence-exception-sentinel")));
+        var thrown = new PersistenceFailureException(
+            category,
+            new InvalidOperationException("persistence-exception-sentinel"));
+        var store = new ThrowingConfigurationEntryStore(thrown);
         await using var sourceFactory = new CentralHostWebApplicationFactory();
         await using var factory = CreateFactory(sourceFactory, store, loggerProvider);
         using var client = factory.CreateClient();
@@ -305,7 +305,7 @@ public sealed class ProblemDetailsContractTests
             SetPath);
 
         var error = Assert.Single(loggerProvider.Entries, entry => entry.LogLevel == LogLevel.Error);
-        Assert.Null(error.Exception);
+        Assert.Same(thrown, error.Exception);
         AssertExactErrorLog(
             error,
             $"Central Host persistence failure. TraceIdentifier: {problem.TraceId}; PersistenceFailureCategory: {category}",
@@ -313,18 +313,18 @@ public sealed class ProblemDetailsContractTests
             ("TraceIdentifier", problem.TraceId),
             ("PersistenceFailureCategory", category));
         AssertDoesNotContain(problem.Body, "persistence-exception-sentinel", "configuration-value-sentinel");
-        AssertLogsDoNotContain(loggerProvider, "persistence-exception-sentinel", "configuration-value-sentinel");
+        AssertLogsDoNotContain(loggerProvider, "configuration-value-sentinel");
     }
 
     [Fact]
-    public async Task Unexpected_failures_redact_request_and_persistence_secrets_from_the_response_and_logs()
+    public async Task Unexpected_failures_keep_the_exception_in_logs_and_redact_it_from_the_response()
     {
         var loggerProvider = new CapturingLoggerProvider();
         await using var sourceFactory = new CentralHostWebApplicationFactory();
         var connectionString = $"Data Source={sourceFactory.DatabasePath};Pooling=False";
-        var store = new ThrowingConfigurationEntryStore(
-            new InvalidOperationException(
-                $"unexpected-exception-sentinel path={sourceFactory.DatabasePath} connection={connectionString} sql=SELECT sql-sentinel"));
+        var thrown = new InvalidOperationException(
+            $"unexpected-exception-sentinel path={sourceFactory.DatabasePath} connection={connectionString} sql=SELECT sql-sentinel");
+        var store = new ThrowingConfigurationEntryStore(thrown);
         await using var factory = CreateFactory(sourceFactory, store, loggerProvider);
         using var client = factory.CreateClient();
 
@@ -343,7 +343,7 @@ public sealed class ProblemDetailsContractTests
             SetPath);
 
         var error = Assert.Single(loggerProvider.Entries, entry => entry.LogLevel == LogLevel.Error);
-        Assert.Null(error.Exception);
+        Assert.Same(thrown, error.Exception);
         AssertExactErrorLog(
             error,
             $"Central Host unexpected failure. TraceIdentifier: {problem.TraceId}",
@@ -363,16 +363,12 @@ public sealed class ProblemDetailsContractTests
             loggerProvider,
             "configuration-value-sentinel",
             "BodySentinel",
-            sourceFactory.DatabasePath,
-            connectionString,
-            "sql-sentinel",
             "query-sentinel",
-            "query-value-sentinel",
-            "unexpected-exception-sentinel");
+            "query-value-sentinel");
     }
 
     [Fact]
-    public async Task Response_started_failure_aborts_without_writing_a_problem_details_body_and_logs_only_safe_metadata()
+    public async Task Response_started_failure_aborts_without_writing_a_problem_details_body_and_logs_the_exception()
     {
         var loggerProvider = new CapturingLoggerProvider();
         using var loggerFactory = LoggerFactory.Create(builder => builder.AddProvider(loggerProvider));
@@ -399,7 +395,7 @@ public sealed class ProblemDetailsContractTests
         Assert.True(responseFeature.HasStarted);
         Assert.Equal(0, problemDetailsService.WriteCallCount);
         var error = Assert.Single(loggerProvider.Entries, entry => entry.LogLevel == LogLevel.Error);
-        Assert.Null(error.Exception);
+        Assert.Equal("response-started-exception-sentinel sql=started-sql-sentinel", error.Exception?.Message);
         AssertExactErrorLog(
             error,
             "Central Host failure after the response started. TraceIdentifier: response-started-trace",
@@ -407,15 +403,13 @@ public sealed class ProblemDetailsContractTests
             ("TraceIdentifier", "response-started-trace"));
         AssertLogsDoNotContain(
             loggerProvider,
-            "response-started-exception-sentinel",
-            "started-sql-sentinel",
             "body-sentinel",
             "query-sentinel",
             "query-value-sentinel");
     }
 
     [Fact]
-    public async Task Problem_Details_writer_failure_before_response_start_aborts_without_recursion_and_logs_one_safe_error()
+    public async Task Problem_Details_writer_failure_before_response_start_aborts_without_recursion_and_logs_the_writer_exception()
     {
         var loggerProvider = new CapturingLoggerProvider();
         using var loggerFactory = LoggerFactory.Create(builder => builder.AddProvider(loggerProvider));
@@ -442,7 +436,7 @@ public sealed class ProblemDetailsContractTests
         Assert.False(responseFeature.HasStarted);
         Assert.Equal(1, problemDetailsService.WriteCallCount);
         var error = Assert.Single(loggerProvider.Entries, entry => entry.LogLevel == LogLevel.Error);
-        Assert.Null(error.Exception);
+        Assert.Equal("writer-before-exception-sentinel", error.Exception?.Message);
         AssertExactErrorLog(
             error,
             "Central Host Problem Details writer failure. TraceIdentifier: writer-before-trace",
@@ -450,14 +444,13 @@ public sealed class ProblemDetailsContractTests
             ("TraceIdentifier", "writer-before-trace"));
         AssertLogsDoNotContain(
             loggerProvider,
-            "writer-before-exception-sentinel",
             "body-sentinel",
             "query-sentinel",
             "query-value-sentinel");
     }
 
     [Fact]
-    public async Task Problem_Details_writer_failure_after_response_start_aborts_without_recursion_and_logs_one_safe_error()
+    public async Task Problem_Details_writer_failure_after_response_start_aborts_without_recursion_and_logs_the_writer_exception()
     {
         var loggerProvider = new CapturingLoggerProvider();
         using var loggerFactory = LoggerFactory.Create(builder => builder.AddProvider(loggerProvider));
@@ -485,7 +478,7 @@ public sealed class ProblemDetailsContractTests
         Assert.True(responseFeature.HasStarted);
         Assert.Equal(1, problemDetailsService.WriteCallCount);
         var error = Assert.Single(loggerProvider.Entries, entry => entry.LogLevel == LogLevel.Error);
-        Assert.Null(error.Exception);
+        Assert.Equal("writer-after-exception-sentinel", error.Exception?.Message);
         AssertExactErrorLog(
             error,
             "Central Host Problem Details writer failure. TraceIdentifier: writer-after-trace",
@@ -493,7 +486,6 @@ public sealed class ProblemDetailsContractTests
             ("TraceIdentifier", "writer-after-trace"));
         AssertLogsDoNotContain(
             loggerProvider,
-            "writer-after-exception-sentinel",
             "body-sentinel",
             "query-sentinel",
             "query-value-sentinel");

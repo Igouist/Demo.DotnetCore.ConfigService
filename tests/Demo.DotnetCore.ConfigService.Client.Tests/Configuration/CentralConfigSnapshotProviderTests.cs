@@ -9,7 +9,7 @@ namespace Demo.DotnetCore.ConfigService.Client.Tests.Configuration;
 public sealed class CentralConfigSnapshotProviderTests
 {
     [Fact]
-    public void Snapshot_is_defensive_case_insensitive_and_never_reloads()
+    public void Snapshot_is_defensive_case_insensitive_never_reloads_and_isolates_in_memory_writes()
     {
         var values = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
@@ -23,7 +23,13 @@ public sealed class CentralConfigSnapshotProviderTests
         Assert.True(provider.TryGet("demo:message", out string? actual));
         Assert.Equal("central", actual);
         Assert.False(provider.GetReloadToken().HasChanged);
-        Assert.Throws<NotSupportedException>(() => provider.Set("Demo:Message", "mutated"));
+
+        provider.Set("Demo:Message", "in-memory");
+        IConfigurationProvider rebuilt = source.Build(new ConfigurationBuilder());
+        rebuilt.Load();
+
+        Assert.True(rebuilt.TryGet("Demo:Message", out string? rebuiltValue));
+        Assert.Equal("central", rebuiltValue);
     }
 
     [Fact]
@@ -61,7 +67,6 @@ public sealed class CentralConfigSnapshotProviderTests
         Assert.True(provider.TryGet("DEMO:EMPTY", out string? empty));
         Assert.Equal(string.Empty, empty);
         Assert.False(provider.TryGet("Demo:Late", out _));
-        Assert.Throws<NotSupportedException>(() => provider.Set("Demo:Message", "mutated"));
     }
 
     [Fact]
@@ -80,7 +85,6 @@ public sealed class CentralConfigSnapshotProviderTests
         Assert.Equal("central", message);
         Assert.True(provider.TryGet("DEMO:EMPTY", out string? empty));
         Assert.Equal(string.Empty, empty);
-        Assert.Throws<NotSupportedException>(() => provider.Set("Demo:Message", "mutated"));
     }
 
     [Fact]

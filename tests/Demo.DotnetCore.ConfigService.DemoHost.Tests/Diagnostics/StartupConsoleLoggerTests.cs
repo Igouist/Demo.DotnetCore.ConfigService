@@ -33,7 +33,10 @@ public sealed class StartupConsoleLoggerTests
             ("FailureKind", "MissingRequiredKeys"),
             ("AttemptCount", 1),
             ("ElapsedMs", 20d),
-            ("MissingRequiredKeys", new[] { "Demo:NeverSerialize" }));
+            ("MissingRequiredKeys", new[] { "Demo:RequiredMessage" }),
+            ("CentralErrorCode", "persistence_failure"),
+            ("CentralTraceId", "0HN1ABCDEF:00000001"),
+            ("Environment", "never-serialize"));
 
         string[] lines = output.ToString().Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
         Assert.Equal(3, lines.Length);
@@ -48,9 +51,15 @@ public sealed class StartupConsoleLoggerTests
         AssertMarker(
             lines[2],
             "failed",
-            "source", "event", "failureKind", "attemptCount", "httpStatusCode", "elapsedMs");
+            "source", "event", "failureKind", "attemptCount", "httpStatusCode", "elapsedMs", "missingRequiredKeys",
+            "centralErrorCode", "centralTraceId");
+        using JsonDocument failed = JsonDocument.Parse(lines[2]);
+        Assert.Equal(
+            ["Demo:RequiredMessage"],
+            failed.RootElement.GetProperty("missingRequiredKeys").EnumerateArray().Select(key => key.GetString()));
+        Assert.Equal("persistence_failure", failed.RootElement.GetProperty("centralErrorCode").GetString());
+        Assert.Equal("0HN1ABCDEF:00000001", failed.RootElement.GetProperty("centralTraceId").GetString());
         Assert.DoesNotContain("never-serialize", output.ToString(), StringComparison.Ordinal);
-        Assert.DoesNotContain("Demo:NeverSerialize", output.ToString(), StringComparison.Ordinal);
     }
 
     [Fact]

@@ -285,11 +285,18 @@ public sealed class PocProcessEnvironmentTests
         Task<int> proofRequest = ProofRequestGuard.RunAsync(
             async cancellationToken =>
             {
-                using CancellationTokenRegistration registration = cancellationToken.Register(
-                    static state => ((TaskCompletionSource)state!).TrySetResult(),
-                    requestCanceled);
-                await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
-                return 0;
+                // Observe cancellation where the operation sees it. A disposable token registration can be removed
+                // by this continuation before Cancel reaches it, because token callbacks run in LIFO order.
+                try
+                {
+                    await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+                    return 0;
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    requestCanceled.TrySetResult();
+                    throw;
+                }
             },
             demoExit.Task,
             TimeSpan.FromSeconds(1),

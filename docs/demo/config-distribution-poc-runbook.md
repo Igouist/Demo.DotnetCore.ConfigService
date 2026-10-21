@@ -727,13 +727,13 @@ GET /api/v1/demo/effective-configuration
 
 工作階段要求 `Content-Type: application/json` 與 `Cache-Control: no-store`，範圍必須是 `Demo`，頂層只能有 `effectiveValues` 與 `scope`，相對於 Demo 的設定鍵只能有 `CentralRequiredMessage`、`FallbackAllowedMessage` 與 `LocalOnlyMessage`。它會確認基底檔案中的標準設定鍵選擇取得 `case-value`，從未建立的後備鍵則維持 `local-fallback`。接著儲存空字串、重新啟動示範主機，並確認相對成員仍存在且值為空字串。限定範圍的回應刻意不包含來源或版本成員。
 
-下列穩定的啟動協定僅說明欄位名稱；不得印出標記內容、設定值、要求或缺少的設定鍵、框架訊息、例外或機密。
+下列穩定的啟動協定僅說明欄位名稱；不得印出標記內容、設定值、要求的設定鍵、框架訊息、例外或機密。`failed` 的 `missingRequiredKeys` 只列出缺少的中央必要設定鍵名稱，不含設定值。
 
 | 事件 | 確切的 JSON 成員 |
 | --- | --- |
 | `loaded` | `source`, `event`, `valueCount`, `missingFallbackKeyCount`, `attemptCount`, `elapsedMs` |
 | `retry` | `source`, `event`, `attemptCount`, `failureKind`, `httpStatusCode`, `delayMs` |
-| `failed` | `source`, `event`, `failureKind`, `attemptCount`, `httpStatusCode`, `elapsedMs` |
+| `failed` | `source`, `event`, `failureKind`, `attemptCount`, `httpStatusCode`, `elapsedMs`, `missingRequiredKeys`, `centralErrorCode`, `centralTraceId` |
 
 ## 展示優先序與啟動快照
 

@@ -86,6 +86,24 @@ public sealed class CentralConfigRegistrationTests
     }
 
     [Fact]
+    public async Task Configuration_writes_after_registration_succeed_and_keep_the_central_value()
+    {
+        using var host = EnabledHost();
+        var transport = new FakeDistributionTransport();
+        transport.EnqueueResponse(Ok(
+            "{\"values\":{\"Demo:Required\":\"central\",\"Demo:Empty\":\"\"},\"missingKeys\":[\"Demo:Fallback\"]}"));
+        var registration = CreateRegistration(transport, new FakeTimeProvider(), new FixedRetryJitter());
+
+        await registration.RegisterAsync(host.Builder, null, CancellationToken.None);
+
+        // WebHost.UseUrls and UseSetting write through the indexer, which calls Set on every provider.
+        host.Builder.Configuration["urls"] = "http://127.0.0.1:5299";
+
+        Assert.Equal("http://127.0.0.1:5299", host.Builder.Configuration["urls"]);
+        Assert.Equal("central", host.Builder.Configuration["Demo:Required"]);
+    }
+
+    [Fact]
     public async Task Failed_acquisition_leaves_the_pipeline_unchanged()
     {
         using var host = EnabledHost();
@@ -99,6 +117,39 @@ public sealed class CentralConfigRegistrationTests
 
         Assert.Equal(CentralConfigFailureKind.HttpFailure, exception.FailureKind);
         Assert.Equal(before, host.Builder.Configuration.Sources);
+    }
+
+    [Fact]
+    public async Task Final_http_failure_carries_the_central_error_code_and_trace_id_of_the_last_attempt()
+    {
+        using var host = EnabledHost();
+        var transport = new FakeDistributionTransport();
+        transport.EnqueueResponse(new DistributionHttpResponse(
+            HttpStatusCode.InternalServerError,
+            ReadOnlyMemory<byte>.Empty,
+            new CentralProblemReference("persistence_failure", "0HN1FIRST:00000001")));
+        transport.EnqueueResponse(new DistributionHttpResponse(
+            HttpStatusCode.BadRequest,
+            ReadOnlyMemory<byte>.Empty,
+            new CentralProblemReference("validation_failed", "0HN1FINAL:00000002")));
+        var logger = new RecordingLogger();
+        var timeProvider = new FakeTimeProvider();
+        var registration = CreateRegistration(transport, timeProvider, new FixedRetryJitter(TimeSpan.Zero));
+
+        Task registering = registration.RegisterAsync(host.Builder, logger, CancellationToken.None);
+        await transport.WaitForNextCallAsync();
+        await logger.WaitForEntryCountAsync(1);
+        timeProvider.Advance(TimeSpan.FromSeconds(1));
+        await transport.WaitForNextCallAsync();
+
+        CentralConfigLoadException exception = await Assert.ThrowsAsync<CentralConfigLoadException>(() => registering);
+
+        Assert.Equal(CentralConfigFailureKind.HttpFailure, exception.FailureKind);
+        Assert.Equal(HttpStatusCode.BadRequest, exception.HttpStatusCode);
+        Assert.Equal("validation_failed", exception.CentralErrorCode);
+        Assert.Equal("0HN1FINAL:00000002", exception.CentralTraceId);
+        LogEntry error = logger.Entries.Single(entry => entry.Level == LogLevel.Error);
+        Assert.Contains(error.Fields, field => field.Key == "CentralTraceId" && Equals(field.Value, "0HN1FINAL:00000002"));
     }
 
     [Fact]

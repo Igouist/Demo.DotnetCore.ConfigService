@@ -34,7 +34,7 @@ public sealed class StartupLogEmitterTests
             });
         Assert.Equal("Central configuration loaded: {ValueCount} values, {MissingFallbackKeyCount} fallback-missing keys, {AttemptCount} attempt(s), {ElapsedMs} ms.", logger.Entries[0].OriginalFormat);
         Assert.Equal("Central configuration retry scheduled after attempt {AttemptCount}: {FailureKind}; HTTP status {HttpStatusCode}; delay {DelayMs} ms.", logger.Entries[1].OriginalFormat);
-        Assert.Equal("Central configuration load failed: {FailureKind}; attempts {AttemptCount}; elapsed {ElapsedMs} ms; Environment {Environment}; missing required keys {MissingRequiredKeys}.", logger.Entries[2].OriginalFormat);
+        Assert.Equal("Central configuration load failed: {FailureKind}; attempts {AttemptCount}; elapsed {ElapsedMs} ms; Environment {Environment}; missing required keys {MissingRequiredKeys}; central error code {CentralErrorCode}; central trace id {CentralTraceId}.", logger.Entries[2].OriginalFormat);
         AssertStructuredFields(
             logger.Entries[0],
             ("ValueCount", 2),
@@ -53,7 +53,9 @@ public sealed class StartupLogEmitterTests
             ("AttemptCount", 2),
             ("ElapsedMs", 250d),
             ("Environment", "UAT"),
-            ("MissingRequiredKeys", failure.MissingRequiredKeys));
+            ("MissingRequiredKeys", failure.MissingRequiredKeys),
+            ("CentralErrorCode", null),
+            ("CentralTraceId", null));
         IReadOnlyList<string> missingRequiredKeys = Assert.IsAssignableFrom<IReadOnlyList<string>>(
             logger.Entries[2].Fields[4].Value);
         Assert.Equal(["Demo:Required"], missingRequiredKeys);

@@ -142,7 +142,8 @@ internal sealed class RetryingDistributionResolver
                     completedAttempts,
                     startedTimestamp,
                     bootstrap.Environment,
-                    completedResponse.StatusCode);
+                    completedResponse.StatusCode,
+                    centralProblem: completedResponse.Problem);
             }
 
             if (!IsRetryable(completedResponse.StatusCode) || attempt == MaxAttempts)
@@ -152,7 +153,8 @@ internal sealed class RetryingDistributionResolver
                     completedAttempts,
                     startedTimestamp,
                     bootstrap.Environment,
-                    completedResponse.StatusCode);
+                    completedResponse.StatusCode,
+                    centralProblem: completedResponse.Problem);
             }
 
             await WaitForRetryAsync(
@@ -413,14 +415,16 @@ internal sealed class RetryingDistributionResolver
         long startedTimestamp,
         string environment,
         HttpStatusCode? statusCode = null,
-        IEnumerable<string>? missingRequiredKeys = null) =>
+        IEnumerable<string>? missingRequiredKeys = null,
+        CentralProblemReference? centralProblem = null) =>
         new(
             kind,
             attemptCount,
             _timeProvider.GetElapsedTime(startedTimestamp),
             statusCode,
             environment,
-            missingRequiredKeys);
+            missingRequiredKeys,
+            centralProblem);
 
     private static void ObserveFault(Task task) =>
         _ = task.ContinueWith(

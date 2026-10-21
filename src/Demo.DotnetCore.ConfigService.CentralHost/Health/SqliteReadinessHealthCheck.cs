@@ -27,9 +27,10 @@ internal sealed class SqliteReadinessHealthCheck
         {
             throw;
         }
-        catch
+        catch (Exception exception)
         {
-            return HealthCheckResult.Unhealthy();
+            // The readiness response never exposes the exception; it only reaches the health check log.
+            return HealthCheckResult.Unhealthy(exception: exception);
         }
     }
 }

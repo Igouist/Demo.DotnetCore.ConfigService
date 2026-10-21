@@ -34,6 +34,7 @@ public sealed class StartupMarkerTests
               "httpStatusCode": 503,
               "delayMs": 125.5,
               "elapsedMs": 250.25,
+              "missingRequiredKeys": [ "Demo:CentralRequiredMessage" ],
               "configurationValue": "must-not-be-exposed"
             }
             """;
@@ -41,6 +42,7 @@ public sealed class StartupMarkerTests
         bool parsed = StartupMarker.TryParse(line, out StartupMarker? marker);
 
         Assert.True(parsed);
+        Assert.Equal(new[] { "Demo:CentralRequiredMessage" }, marker!.MissingRequiredKeys);
         Assert.Equal(
             new StartupMarker(
                 "failed",
@@ -51,7 +53,7 @@ public sealed class StartupMarkerTests
                 503,
                 125.5,
                 250.25),
-            marker);
+            marker with { MissingRequiredKeys = null });
     }
 
     [Fact]
@@ -65,7 +67,8 @@ public sealed class StartupMarkerTests
               "failureKind": 42,
               "httpStatusCode": 2147483648,
               "delayMs": "not-a-number",
-              "elapsedMs": null
+              "elapsedMs": null,
+              "missingRequiredKeys": [ 1 ]
             }
             """;
 

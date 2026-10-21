@@ -38,9 +38,41 @@ internal sealed class HttpClientDistributionTransport : IDistributionTransport
             HttpCompletionOption.ResponseHeadersRead,
             cancellationToken);
 
-        ReadOnlyMemory<byte> responseBody = response.StatusCode == HttpStatusCode.OK
-            ? await response.Content.ReadAsByteArrayAsync(cancellationToken)
-            : ReadOnlyMemory<byte>.Empty;
-        return new DistributionHttpResponse(response.StatusCode, responseBody);
+        if (response.StatusCode == HttpStatusCode.OK)
+        {
+            return new DistributionHttpResponse(
+                response.StatusCode,
+                await response.Content.ReadAsByteArrayAsync(cancellationToken));
+        }
+
+        return new DistributionHttpResponse(
+            response.StatusCode,
+            ReadOnlyMemory<byte>.Empty,
+            await TryReadProblemAsync(response, cancellationToken));
+    }
+
+    // Non-200 bodies are read only as Central Problem Details, and only their validated code and trace id
+    // leave this adapter; a failed read keeps the HTTP status as the whole result.
+    private static async Task<CentralProblemReference?> TryReadProblemAsync(
+        HttpResponseMessage response,
+        CancellationToken cancellationToken)
+    {
+        if (!string.Equals(
+                response.Content.Headers.ContentType?.MediaType,
+                CentralProblemReference.MediaType,
+                StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        try
+        {
+            byte[] body = await response.Content.ReadAsByteArrayAsync(cancellationToken);
+            return CentralProblemReference.Read(body);
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            return null;
+        }
     }
 }

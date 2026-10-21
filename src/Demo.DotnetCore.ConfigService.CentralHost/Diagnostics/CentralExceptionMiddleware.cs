@@ -50,9 +50,9 @@ internal sealed class CentralExceptionMiddleware
             {
                 throw;
             }
-            catch (Exception)
+            catch (Exception writerException)
             {
-                LogProblemDetailsWriterFailure(httpContext);
+                LogProblemDetailsWriterFailure(httpContext, writerException);
                 httpContext.Abort();
             }
         }
@@ -79,6 +79,7 @@ internal sealed class CentralExceptionMiddleware
         if (exception is PersistenceFailureException persistenceFailure)
         {
             _logger.LogError(
+                exception,
                 "Central Host persistence failure. TraceIdentifier: {TraceIdentifier}; PersistenceFailureCategory: {PersistenceFailureCategory}",
                 CentralProblemDetailsWriter.GetTraceIdentifier(httpContext),
                 persistenceFailure.Category);
@@ -89,6 +90,7 @@ internal sealed class CentralExceptionMiddleware
             or PersistenceBusyException))
         {
             _logger.LogError(
+                exception,
                 "Central Host unexpected failure. TraceIdentifier: {TraceIdentifier}",
                 CentralProblemDetailsWriter.GetTraceIdentifier(httpContext));
         }
@@ -99,6 +101,7 @@ internal sealed class CentralExceptionMiddleware
         if (exception is PersistenceFailureException persistenceFailure)
         {
             _logger.LogError(
+                exception,
                 "Central Host failure after the response started. TraceIdentifier: {TraceIdentifier}; PersistenceFailureCategory: {PersistenceFailureCategory}",
                 CentralProblemDetailsWriter.GetTraceIdentifier(httpContext),
                 persistenceFailure.Category);
@@ -106,12 +109,14 @@ internal sealed class CentralExceptionMiddleware
         }
 
         _logger.LogError(
+            exception,
             "Central Host failure after the response started. TraceIdentifier: {TraceIdentifier}",
             CentralProblemDetailsWriter.GetTraceIdentifier(httpContext));
     }
 
-    private void LogProblemDetailsWriterFailure(HttpContext httpContext) =>
+    private void LogProblemDetailsWriterFailure(HttpContext httpContext, Exception writerException) =>
         _logger.LogError(
+            writerException,
             "Central Host Problem Details writer failure. TraceIdentifier: {TraceIdentifier}",
             CentralProblemDetailsWriter.GetTraceIdentifier(httpContext));
 }

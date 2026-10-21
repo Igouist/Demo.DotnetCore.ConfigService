@@ -10,7 +10,8 @@ internal sealed record DistributionResolveRequest(
 
 internal sealed record DistributionHttpResponse(
     HttpStatusCode StatusCode,
-    ReadOnlyMemory<byte> Body);
+    ReadOnlyMemory<byte> Body,
+    CentralProblemReference? Problem = null);
 
 internal sealed class ValidatedDistributionResponse
 {
