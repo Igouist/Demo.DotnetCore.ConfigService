@@ -39,6 +39,7 @@
 
 ### 目前驗證結果
 
+- CI：[`.github/workflows/ci.yml`](.github/workflows/ci.yml) 在 `push` 到 `master` 與 Pull Request 時，於 `ubuntu-latest` 與 `windows-latest` 執行 README「完整驗證」；最新結果以 [Actions](https://github.com/Igouist/Demo.DotnetCore.ConfigService/actions/workflows/ci.yml) 為準。以下為 CI 之前的手動驗證紀錄。
 - 環境：Linux、SDK 10.0.113、.NET 8 ASP.NET Core 執行階段；對應提交 `3c2893b`（已含於 `5a9e6c5`）。
 - README「完整驗證」全部通過：format 無變更、Release build 0 warning；CentralHost.Tests 185、Client.Tests 187、DemoHost.Tests 12、EndToEnd.Tests 130。
 - HTTP 演示的 17 段請求已以等效 bash 指令在 Linux 上逐段驗證。
@@ -56,10 +57,15 @@
 - [#4](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/4)：新增 `GET /api/v1/management/configurations?environment=...`，列出中央環境每個設定鍵的顯示拼寫、最新版本、目前狀態與時間；不回傳值、包含已移除的鍵、不分頁，空環境回傳空陣列。契約見設計文件 §4.5（原 §4.5、§4.6 改為 §4.6、§4.7），取捨見決策紀錄 POC-058。`.http` 在 17 之後加一段附錄請求，01–17 的編號與預期結果不變。
 - 驗證（Linux、SDK 10.0.113）：README「完整驗證」全部通過，format 無變更、Release build 0 warning；CentralHost.Tests 192、Client.Tests 189、DemoHost.Tests 12、EndToEnd.Tests 130。另以真正的 Central 程序實測列表、空環境與缺少 `environment` 的 `400`。
 
-### 進行中的變更（分支 `claude/project-thread-uoatc2`，尚未合併）
+### PR #15（已合併，合併提交 `d75b78d`）
 
 - [#11](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/11)：新增 [`scripts/start-http-demo.ps1`](scripts/start-http-demo.ps1)，一個指令建置並啟動 Central 與兩個 Demo；使用者完成 `.http` 02 後按 Enter 才啟動 Demo，之後輸入 `A`／`B`／`R` 重啟 Demo，`Q` 或 `Ctrl+C` 停止全部並刪除暫存目錄（`-KeepData` 保留）。腳本不寫入設定值，01–17 的預期結果不變。方案比較見決策紀錄 POC-059；[HTTP 操作說明](docs/demo/http-demo-guide.md)改寫為腳本流程，手動流程移到附錄；README 同步。`.editorconfig` 規定 `.ps1` 存成含 BOM 的 UTF-8，供 Windows PowerShell 5.1 正確讀取中文。
 - 驗證（Linux、PowerShell 7.6、SDK 10.0.113）：以 tmux 執行腳本，`.http` 01–17 與附錄以 httpyac 逐段送出，狀態碼與關鍵欄位均符合預期；第 15 步輸入 `A` 後腳本顯示 `"missingRequiredKeys":["Demo:CentralRequiredMessage"]` 與結束代碼 134。另測 `Q` 與 `Ctrl+C`（在 Enter 提示與指令選單）都會停止三個程序並刪除暫存目錄、連接埠已被使用與 `Demo__` 環境變數時拒絕啟動、暫存路徑含空白。尚未在 Windows 或 Windows PowerShell 5.1 上執行。
+
+### 進行中的變更（分支 `claude/project-thread-ntad9f`，尚未合併）
+
+- [#12](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/12)：新增 GitHub Actions workflow，以 Linux／Windows 矩陣執行 README「完整驗證」的五個命令，測試失敗時上傳 TRX；README 加上 CI 徽章與說明。EndToEnd.Tests 先留在同一個 job，待實測時間與穩定性後再決定是否拆開。
+- 本機驗證（Linux、SDK 10.0.113）：五個命令全部通過；CentralHost.Tests 192、Client.Tests 189、DemoHost.Tests 12、EndToEnd.Tests 130。`dotnet test` 共 78 秒，其中 EndToEnd.Tests 58 秒。
 
 ### 下一步
 
