@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: 完整驗證 (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    env:
+      DOTNET_NOLOGO: true
+      DOTNET_CLI_TELEMETRY_OPTOUT: true
+    steps:
+      - uses: actions/checkout@v5
+
+      # SDK 依 global.json；8.0.x 提供測試需要的 .NET 8 ASP.NET Core 執行階段。
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+          dotnet-version: 8.0.x
+
+      # 與 README「完整驗證」相同的五個命令。
+      - name: Restore
+        run: dotnet restore Demo.DotnetCore.ConfigService.sln -maxcpucount:1 -nodeReuse:false
+      - name: Format
+        run: dotnet format Demo.DotnetCore.ConfigService.sln --verify-no-changes --no-restore
+      - name: Build
+        run: dotnet build Demo.DotnetCore.ConfigService.sln -c Release --no-restore -maxcpucount:1 -nodeReuse:false -p:EnforceCodeStyleInBuild=true
+      - name: Test
+        run: dotnet test Demo.DotnetCore.ConfigService.sln -c Release --no-build --no-restore -maxcpucount:1 -nodeReuse:false --logger trx --results-directory TestResults
+      - name: Whitespace
+        run: git diff --check
+
+      - name: 上傳測試結果
+        if: failure()
+        uses: actions/upload-artifact@v5
+        with:
+          name: test-results-${{ matrix.os }}
+          path: TestResults
+          if-no-files-found: ignore

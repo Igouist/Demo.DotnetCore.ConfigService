@@ -1,5 +1,7 @@
 # Config Distribution POC
 
+[![CI](https://github.com/Igouist/Demo.DotnetCore.ConfigService/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/Igouist/Demo.DotnetCore.ConfigService/actions/workflows/ci.yml)
+
 Config Distribution POC 使用 .NET 8 驗證集中式設定發佈。Central Config Host 管理共享設定值。Consumer Application 在啟動時透過 Client 取得所選的 Configuration Keys。Client 將中央值加入 .NET `IConfiguration` pipeline。Central Config Host 不註冊 Consumer Application。
 
 > [!WARNING]
@@ -129,6 +131,8 @@ git diff --check
 ```
 
 先完成相同原始碼的 Release build，再執行包含 `--no-build` 的 `dotnet test`。在 Windows 上使用單節點並停用 node reuse，可避免遺留閒置的 MSBuild workers。
+
+[CI](.github/workflows/ci.yml) 在 `push` 到 `master` 與 Pull Request 時，於 Linux 與 Windows 執行相同的五個命令；測試失敗時，TRX 測試結果會上傳為 artifact。
 
 ## 逐步呼叫 API 演示
 
