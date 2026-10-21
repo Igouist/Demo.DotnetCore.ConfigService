@@ -65,6 +65,8 @@ powershell -ExecutionPolicy Bypass -File .\scripts\start-http-demo.ps1
 
 觀眾若問「這個中央環境現在有哪些設定？」，可在任一步驟後執行呼叫檔的**附錄 A** 請求。它只列出設定鍵、版本與狀態，不包含值，也不改變資料，不影響 01–17 的預期結果。
 
+Central 執行期間，也可以用瀏覽器開啟 Swagger UI：`http://127.0.0.1:5180/swagger`。它列出 Central 每個管理與分發端點的請求與回應結構，適合回答「這個 API 要傳什麼、會回什麼」，也能按「Try it out」直接呼叫。要看演示資料時，把 `environment` 填成 `HttpDemo` 並只用查詢端點（列表、`current`、`history`）；在 Swagger UI 對 `HttpDemo` 執行 Set 或 Remove 會增加版本，使後續步驟的版本號與預期不同。請求本文的預設範例使用 `UAT`，不影響演示資料。
+
 每段請求上方都列出預期狀態碼與關鍵欄位，請對照實際回應。`snapshot-v3` 是值的名稱，不是版本號；Remove 也會增加版本。
 
 要查看資料庫內容時，使用 **03**、**13**、**14** 的 `current` 與 `history` 查詢。用 DB Browser for SQLite 或 `sqlite3` 直接開啟資料庫時，部分查詢會顯示 `no such collation sequence: ORDINAL_IGNORE_CASE`，這不表示資料庫損壞；原因與唯讀查詢方式見[用外部 SQLite 工具查看 Central 資料庫](../knowledge/sqlite-external-tool-collation.md)。不要用外部工具寫入資料庫。

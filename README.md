@@ -101,10 +101,10 @@ Demo.DotnetCore.ConfigService.sln
 
 | Project | 主要責任 |
 | --- | --- |
-| `CentralHost` | 驗證 HTTP 請求，執行 Management／Distribution 操作，提供 Operational readiness 與 immutable launch-scoped `instanceId` 的 launch-correlation ownership，並以 SQLite 保存版本歷史。 |
+| `CentralHost` | 驗證 HTTP 請求，執行 Management／Distribution 操作，提供 Operational readiness 與 immutable launch-scoped `instanceId` 的 launch-correlation ownership，並以 SQLite 保存版本歷史；提供 OpenAPI 文件與 Swagger UI。 |
 | `Client` | 驗證 bootstrap、呼叫 Distribution interface、處理重試／逾時／取消與診斷，並加入 snapshot Provider。 |
 | `DemoHost` | 使用 Client public API 載入中央值，並提供 scoped 與 unsafe 端點。 |
-| `CentralHost.Tests` | 驗證 domain、SQLite、HTTP contracts、readiness／launch identity、error mapping、contention 與 Host lifecycle。 |
+| `CentralHost.Tests` | 驗證 domain、SQLite、HTTP contracts、readiness／launch identity、error mapping、contention、Host lifecycle 與 OpenAPI 文件。 |
 | `Client.Tests` | 驗證 bootstrap、transport、response parsing、resilience、diagnostics、Provider precedence 與 package contract。 |
 | `DemoHost.Tests` | 驗證 effective configuration、startup markers、路由、headers 與 checked-in settings。 |
 | `EndToEnd.Tests` | 使用實際 Central／Demo 子程序、獨立的連接埠、SQLite 資料庫與暫存根目錄，以及 packaged Client 驗證完整流程與 matching launch identity ownership。 |
@@ -145,6 +145,10 @@ pwsh ./scripts/start-http-demo.ps1
 腳本建置方案、以新的暫存資料庫啟動 Central，等你在 `.http` 寫入第一版中央值後啟動兩個 Demo，之後在同一個視窗輸入 `A`、`B` 或 `R` 重啟 Demo，輸入 `Q` 或按 `Ctrl+C` 停止全部程序並清理暫存資料。支援 Windows PowerShell 5.1 與 PowerShell 7；Windows PowerShell 的執行方式、指令選單、選用的設定來源優先序展示，以及不使用腳本的手動流程見操作說明。
 
 這個短演示使用 `ProjectReference` 連結 Client。使用實際封裝 Client 的完整情境由 `EndToEnd.Tests` 自動驗證；在自己的專案引用套件的方式見 [Client 使用說明](src/Demo.DotnetCore.ConfigService.Client/README.md#引用套件)。
+
+### 在瀏覽器查看與試打 API
+
+Central 啟動後，用瀏覽器開啟 `http://127.0.0.1:5180/swagger`（用啟動腳本時的位址；自行啟動時換成 Central 實際監聽的位址）。Swagger UI 列出 Management 與 Distribution 的每個端點，以中文說明用途、參數與每種回應（包含 Problem Details 的錯誤代碼）；按「Try it out」再按「Execute」即可直接呼叫。請求本文的預設範例使用中央環境 `UAT`，不會動到 `.http` 演示的 `HttpDemo` 資料。OpenAPI 文件位於 `/swagger/v1/swagger.json`。取捨見決策紀錄 POC-061。
 
 ## 使用 Client package
 

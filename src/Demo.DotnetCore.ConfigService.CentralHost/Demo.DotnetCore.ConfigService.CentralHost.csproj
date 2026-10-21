@@ -9,6 +9,9 @@
     <PackageReference Include="Dapper" />
     <PackageReference Include="FluentValidation" />
     <PackageReference Include="Microsoft.Data.Sqlite" />
+    <PackageReference Include="Swashbuckle.AspNetCore.Annotations" />
+    <PackageReference Include="Swashbuckle.AspNetCore.SwaggerGen" />
+    <PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" />
   </ItemGroup>
 
   <ItemGroup>

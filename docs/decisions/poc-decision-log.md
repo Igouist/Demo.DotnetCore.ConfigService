@@ -77,6 +77,7 @@
 | POC-058 | 已接受（Accepted） | 列出中央環境設定鍵的管理介面 |
 | POC-059 | 已接受（Accepted） | 以 PowerShell 腳本一次啟動 HTTP 演示 |
 | POC-060 | 已接受（Accepted） | 移除完整示範手冊 |
+| POC-061 | 已接受（Accepted） | Central 一律提供 OpenAPI 文件與 Swagger UI |
 
 ## 決策
 
@@ -949,6 +950,22 @@ HTTP 演示原本要開三個終端機，依序啟動 Central、Demo A、Demo B�
 - **使用端如何引用真正的套件**：Client 使用說明新增「引用套件」，涵蓋 `dotnet pack`、本機套件來源、`packageSourceMapping`、`PackageReference` 與版本快取。
 
 這不改變任何產品行為、HTTP 契約或 E2E 測試。Demo／E2E 規格第 10 節已同步修訂。
+
+### POC-061 — Central 一律提供 OpenAPI 文件與 Swagger UI
+
+**狀態：** 已接受（Accepted），適用於本 POC
+
+**日期：** 2026-10-21
+
+團隊成員要了解 Central 的介面，原本只能讀設計文件第 4 節或 `.http` 檔。Central 改為提供 OpenAPI 文件（`/swagger/v1/swagger.json`）與 Swagger UI（`/swagger`），在瀏覽器即可查看與試打 Management 與 Distribution 端點。
+
+- **套件：** 使用 Swashbuckle 的 `SwaggerGen`、`SwaggerUI` 與 `Annotations`。.NET 8 內建的 `Microsoft.AspNetCore.OpenApi` 只產生 Minimal API 的 operation 描述，不產生文件，也不提供 UI；.NET 9 起才內建文件產生。
+- **一律開啟，不限 `Development`：** HTTP 演示與 E2E 都不把主機環境設為 `Development`，限定後演示時看不到。POC 只在隔離環境使用非敏感資料（設計文件第 11 節），且 Swagger UI 呼叫的是本來就公開、無認證的同一組端點，不增加新的能力。若日後要部署到共用環境，再依當時的認證設計重新評估。
+- **請求本文以屬性標示：** 控制器不使用模型繫結，而是透過 `StrictJsonRequestReader` 讀取本文，Swashbuckle 無法推斷。Set、Remove、Resolve 以 `JsonRequestBody` 屬性標示請求型別與範例，由 operation filter 寫入文件；回應以標準的 `ProducesResponseType` 標示，成功為 `application/json`，錯誤為 `application/problem+json`。請求範例使用中央環境 `UAT`，避免誤改 HTTP 演示的 `HttpDemo` 資料。
+- **中文說明以 Swashbuckle 的標註屬性撰寫：** 每個端點以 `SwaggerOperation` 寫中文摘要與說明，查詢參數以 `SwaggerParameter`、每種回應以 `SwaggerResponse` 說明意義與錯誤代碼，共用文字集中在 `OpenApiDescriptions`。不採用 XML 文件註解：專案把警告視為錯誤，開啟 XML 文件會要求每個公開成員都寫註解。分組名稱沿用控制器名稱（`ManagementConfigurations`、`DistributionConfigurations`），由 `SwaggerTag` 加上中文說明。這些文字只給人閱讀，契約仍以設計文件第 4 節為準。
+- **不列入 `/health/ready`：** 它是 Client 與維運使用的探針，不屬於 Management 或 Distribution 介面，契約見設計文件第 4.7 節。
+
+這不改變任何既有端點的行為或回應內容。測試確認 OpenAPI 文件可取得、只列出上述六個端點，且每個端點都有摘要與說明，並描述請求本文與成功、Problem Details 回應。
 
 ## 尚未解決的設計問題
 
