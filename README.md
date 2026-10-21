@@ -132,7 +132,13 @@ git diff --check
 
 ## 逐步呼叫 API 演示
 
-向團隊逐步展示時，使用 [HTTP 演示操作說明](docs/demo/http-demo-guide.md) 搭配 [HTTP 呼叫檔](docs/demo/config-distribution-demo.http)。依序發送請求，觀察兩個使用端共用同一份中央值、本機後備值、啟動快照、必要設定鍵缺值時的啟動失敗，以及版本歷史。操作說明提供持續運作的服務啟動方式，並標示需要手動重啟 Demo 的步驟。
+向團隊逐步展示時，使用 [HTTP 演示操作說明](docs/demo/http-demo-guide.md) 搭配 [HTTP 呼叫檔](docs/demo/config-distribution-demo.http)。依序發送請求，觀察兩個使用端共用同一份中央值、本機後備值、啟動快照、必要設定鍵缺值時的啟動失敗，以及版本歷史。Central 與兩個 Demo 用一個指令啟動：
+
+```powershell
+pwsh ./scripts/start-http-demo.ps1
+```
+
+腳本建置方案、以新的暫存資料庫啟動 Central，等你在 `.http` 寫入第一版中央值後啟動兩個 Demo，之後在同一個視窗輸入 `A`、`B` 或 `R` 重啟 Demo，輸入 `Q` 或按 `Ctrl+C` 停止全部程序並清理暫存資料。支援 Windows PowerShell 5.1 與 PowerShell 7；Windows PowerShell 的執行方式、指令選單與不使用腳本的手動流程見操作說明。
 
 這個短演示使用 `ProjectReference` 連結 Client，不取代 packaged E2E tests 或下列完整示範。
 
