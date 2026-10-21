@@ -100,6 +100,72 @@ public sealed class ManagementHttpContractTests
         AssertVersionResponse(versions[1], 1, "Set", JsonValueKind.String, "central-value");
     }
 
+    [Fact]
+    public async Task Environment_list_returns_every_key_with_its_latest_state_but_no_values()
+    {
+        await using var factory = new CentralHostWebApplicationFactory();
+        using var client = factory.CreateClient();
+
+        foreach (var (environment, key, value) in new[]
+                 {
+                     ("UAT", "Demo:Zeta", "zeta-value"),
+                     ("UAT", "demo:alpha", "alpha-value"),
+                     ("uat", "DEMO:ALPHA", "alpha-value-2"),
+                     ("UAT", "Demo:Removed", "removed-value"),
+                     ("Production", "Demo:OtherEnvironment", "other-value")
+                 })
+        {
+            using var setResponse = await PostJsonAsync(
+                client,
+                "/api/v1/management/configurations/set",
+                JsonSerializer.Serialize(new { environment, key, value }));
+            Assert.Equal(HttpStatusCode.Created, setResponse.StatusCode);
+        }
+
+        using (var removeResponse = await PostJsonAsync(
+                   client,
+                   "/api/v1/management/configurations/remove",
+                   """
+                   {"environment":"UAT","key":"Demo:Removed"}
+                   """))
+        {
+            Assert.Equal(HttpStatusCode.Created, removeResponse.StatusCode);
+        }
+
+        using var listResponse = await client.GetAsync("/api/v1/management/configurations?environment=uAt");
+
+        Assert.Equal(HttpStatusCode.OK, listResponse.StatusCode);
+        var listText = await listResponse.Content.ReadAsStringAsync();
+        using var listBody = await ReadJsonAsync(listResponse);
+        AssertObjectProperties(listBody.RootElement, "environment", "configurations");
+        Assert.Equal("uAt", listBody.RootElement.GetProperty("environment").GetString());
+        var configurations = listBody.RootElement.GetProperty("configurations");
+        Assert.Equal(JsonValueKind.Array, configurations.ValueKind);
+        Assert.Equal(3, configurations.GetArrayLength());
+        AssertSummaryResponse(configurations[0], "demo:alpha", 2, "Present");
+        AssertSummaryResponse(configurations[1], "Demo:Removed", 2, "Removed");
+        AssertSummaryResponse(configurations[2], "Demo:Zeta", 1, "Present");
+        foreach (var forbidden in new[] { "alpha-value", "removed-value", "zeta-value", "OtherEnvironment" })
+        {
+            Assert.DoesNotContain(forbidden, listText, StringComparison.Ordinal);
+        }
+    }
+
+    [Fact]
+    public async Task Environment_list_for_an_environment_without_entries_returns_an_empty_list()
+    {
+        await using var factory = new CentralHostWebApplicationFactory();
+        using var client = factory.CreateClient();
+
+        using var response = await client.GetAsync("/api/v1/management/configurations?environment=NeverCreated");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        using var body = await ReadJsonAsync(response);
+        AssertObjectProperties(body.RootElement, "environment", "configurations");
+        Assert.Equal("NeverCreated", body.RootElement.GetProperty("environment").GetString());
+        Assert.Equal(0, body.RootElement.GetProperty("configurations").GetArrayLength());
+    }
+
     private static async Task<HttpResponseMessage> PostJsonAsync(HttpClient client, string path, string json) =>
         await client.PostAsync(path, new StringContent(json, Encoding.UTF8, "application/json"));
 
@@ -141,6 +207,19 @@ public sealed class ManagementHttpContractTests
         var valueElement = response.GetProperty("value");
         Assert.Equal(valueKind, valueElement.ValueKind);
         Assert.Equal(value, valueElement.GetString());
+        Assert.Equal(Timestamp, response.GetProperty("createdAtUtc").GetString());
+    }
+
+    private static void AssertSummaryResponse(
+        JsonElement response,
+        string key,
+        long version,
+        string state)
+    {
+        AssertObjectProperties(response, "key", "version", "state", "createdAtUtc");
+        Assert.Equal(key, response.GetProperty("key").GetString());
+        Assert.Equal(version, response.GetProperty("version").GetInt64());
+        Assert.Equal(state, response.GetProperty("state").GetString());
         Assert.Equal(Timestamp, response.GetProperty("createdAtUtc").GetString());
     }
 

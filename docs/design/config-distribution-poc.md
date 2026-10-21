@@ -168,7 +168,7 @@ Set 在任何先前狀態下都能成功，並附加下一個版本。所有版�
 
 ## 4. 中央設定主機 HTTP 介面
 
-管理介面與設定分發介面的路由位於 `/api/v1` 下。控制器使用 `System.Text.Json`；JSON 成員名稱採用小駝峰命名，契約列舉值如 `Present`、`Removed`、`Set` 及 `Remove` 會序列化為所示字串，而非數字。未知的要求屬性會遭拒絕。成功回應的時間戳記為 UTC `DateTimeOffset` 值，以預設的 System.Text.Json ISO 8601 格式序列化。伺服器持有的 `TimeProvider` 提供時間，以支援可確定重現的測試。維運就緒狀態介面是第 4.6 節的單一未加版本路由。
+管理介面與設定分發介面的路由位於 `/api/v1` 下。控制器使用 `System.Text.Json`；JSON 成員名稱採用小駝峰命名，契約列舉值如 `Present`、`Removed`、`Set` 及 `Remove` 會序列化為所示字串，而非數字。未知的要求屬性會遭拒絕。成功回應的時間戳記為 UTC `DateTimeOffset` 值，以預設的 System.Text.Json ISO 8601 格式序列化。伺服器持有的 `TimeProvider` 提供時間，以支援可確定重現的測試。維運就緒狀態介面是第 4.7 節的單一未加版本路由。
 
 ### 4.1 管理介面：Set
 
@@ -277,7 +277,42 @@ Removed 回應：`200 OK`，含有 `"state": "Removed"` 與 `"value": null`。�
 
 版本以遞減順序排列。此 POC 的歷程不分頁。從未建立的項目回傳 `404 Not Found`。
 
-### 4.5 設定分發介面：Resolve
+### 4.5 管理介面：列出中央環境的設定鍵
+
+`GET /api/v1/management/configurations?environment=UAT`
+
+成功：`200 OK`
+
+```json
+{
+  "environment": "UAT",
+  "configurations": [
+    {
+      "key": "Demo:Message",
+      "version": 2,
+      "state": "Removed",
+      "createdAtUtc": "2026-08-30T07:05:00+00:00"
+    },
+    {
+      "key": "Demo:Title",
+      "version": 1,
+      "state": "Present",
+      "createdAtUtc": "2026-08-30T07:00:00+00:00"
+    }
+  ]
+}
+```
+
+此端點回答「某個中央環境目前有哪些設定鍵」，供示範與日常管理使用（POC-058）。`environment` 是唯一的查詢參數，驗證規則與第 4.3 節相同；設定鍵選擇、分頁或篩選參數不屬於此契約。
+
+- 頂層 `environment` 回傳要求中的拼寫。中央環境以不區分大小寫的方式比對，同一環境下的各項目可能以不同拼寫首次建立，因此不另外回傳儲存的環境拼寫。
+- `configurations` 列出該環境的每個設定項目，包含目前狀態為 Removed 的項目。每個項目恰好包含儲存的設定鍵顯示拼寫、最新的 `version`、目前的 `state`，以及最新版本的 `createdAtUtc`。
+- 回應不包含設定值。需要值時，以第 4.3 節查詢單一設定鍵。
+- 項目依設定鍵以固定序位、不區分大小寫的順序排列。
+- 沒有任何項目的中央環境回傳 `200 OK` 與空的 `configurations` 陣列，不回傳 `404`：中央環境不是需要登記的資源。
+- 此 POC 不分頁，也不設定項目數量上限（POC-053）。
+
+### 4.6 設定分發介面：Resolve
 
 `POST /api/v1/distribution/configurations/resolve`
 
@@ -317,7 +352,7 @@ Removed 回應：`200 OK`，含有 `"state": "Removed"` 與 `"value": null`。�
 
 缺少的設定鍵（Missing Key）不會使 Resolve 失敗。用戶端套件在驗證完整回應之後，才決定必要或後備行為。
 
-### 4.6 維運就緒狀態
+### 4.7 維運就緒狀態
 
 `GET /health/ready`
 
@@ -350,7 +385,7 @@ Removed 回應：`200 OK`，含有 `"state": "Removed"` 與 `"value": null`。�
 
 ### 5.2 Problem Details 契約
 
-在選定已定義的端點後、HTTP 回應開始前產生的所有已知管理或設定分發失敗，都使用 `application/problem+json` 與 RFC 9457 Problem Details。中央主機的單一錯誤對應元件整合傳輸／模型狀態對應、`IProblemDetailsService` 及例外處理，負責這些回應；控制器不各自建立無關的錯誤本文。維運就緒狀態介面使用第 4.6 節獨立且安全的彙總回應。
+在選定已定義的端點後、HTTP 回應開始前產生的所有已知管理或設定分發失敗，都使用 `application/problem+json` 與 RFC 9457 Problem Details。中央主機的單一錯誤對應元件整合傳輸／模型狀態對應、`IProblemDetailsService` 及例外處理，負責這些回應；控制器不各自建立無關的錯誤本文。維運就緒狀態介面使用第 4.7 節獨立且安全的彙總回應。
 
 ```json
 {

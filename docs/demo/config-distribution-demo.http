@@ -135,3 +135,9 @@ Accept: application/json
 # 預期：200，CentralRequiredMessage 為 snapshot-v3，後備值仍為 local-fallback。
 GET {{demoAUrl}}/api/v1/demo/effective-configuration
 Accept: application/json
+
+### 附錄. 列出中央環境目前有哪些設定鍵（可選，不影響 01–17）
+# 預期：200，configurations 只有 Demo:CentralRequiredMessage，version 為 4，state 為 Present。
+# 列表不包含設定值；已移除的設定鍵也會列出，state 為 Removed。需要值時使用 03 的 current。
+GET {{centralUrl}}/api/v1/management/configurations?environment={{centralEnvironment}}
+Accept: application/json

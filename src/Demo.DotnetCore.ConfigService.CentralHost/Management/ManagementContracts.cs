@@ -6,6 +6,8 @@ internal sealed record RemoveConfigurationRequest(string? Environment, string? K
 
 internal sealed record ConfigurationIdentityQuery(string? Environment, string? Key);
 
+internal sealed record EnvironmentQuery(string? Environment);
+
 internal sealed record ConfigurationCommandResponse(
     string Environment,
     string Key,
@@ -31,3 +33,13 @@ internal sealed record ConfigurationHistoryResponse(
     string Environment,
     string Key,
     IReadOnlyList<ConfigurationVersionResponse> Versions);
+
+internal sealed record ConfigurationSummaryResponse(
+    string Key,
+    long Version,
+    ConfigurationEntryState State,
+    DateTimeOffset CreatedAtUtc);
+
+internal sealed record ConfigurationListResponse(
+    string Environment,
+    IReadOnlyList<ConfigurationSummaryResponse> Configurations);

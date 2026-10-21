@@ -6,6 +6,8 @@ internal sealed class FakeConfigurationEntryStore : IConfigurationEntryStore
 
     public ConfigurationHistory? HistoryResult { get; set; }
 
+    public IReadOnlyList<ConfigurationEntrySummary> ListResults { get; set; } = [];
+
     public IReadOnlyList<StoredResolution> ResolutionResults { get; set; } = [];
 
     public ConfigurationCommandReceipt? SetResult { get; set; }
@@ -15,6 +17,8 @@ internal sealed class FakeConfigurationEntryStore : IConfigurationEntryStore
     public List<ConfigurationEntryIdentity> CurrentRequests { get; } = [];
 
     public List<ConfigurationEntryIdentity> HistoryRequests { get; } = [];
+
+    public List<EnvironmentName> ListRequests { get; } = [];
 
     public List<(EnvironmentName Environment, IReadOnlyList<ConfigurationKey> Keys)> ResolveRequests { get; } = [];
 
@@ -36,6 +40,14 @@ internal sealed class FakeConfigurationEntryStore : IConfigurationEntryStore
     {
         HistoryRequests.Add(identity);
         return Task.FromResult(HistoryResult);
+    }
+
+    public Task<IReadOnlyList<ConfigurationEntrySummary>> ListEntriesAsync(
+        EnvironmentName environment,
+        CancellationToken cancellationToken)
+    {
+        ListRequests.Add(environment);
+        return Task.FromResult(ListResults);
     }
 
     public Task<IReadOnlyList<StoredResolution>> ResolveExistingAsync(

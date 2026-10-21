@@ -85,6 +85,8 @@ dotnet src/Demo.DotnetCore.ConfigService.DemoHost/bin/Release/net8.0/Demo.Dotnet
 | 15 | 只在終端機 B 按 `Ctrl+C` 停止 Demo A，再執行相同啟動命令。Demo A 會在幾秒內啟動失敗，終端機顯示 `"event":"failed"`、`"failureKind":"MissingRequiredKeys"` 與 `"missingRequiredKeys":["Demo:CentralRequiredMessage"]`，接著是未處理例外與非零結束代碼。這是刻意的快速失敗：必要設定缺值時，應用程式不會帶著錯誤設定上線。接著執行 **15**，查詢仍在執行的 Demo B，它仍回傳 `snapshot-v2`。 |
 | 16–17 | 先 Set 還原為 `snapshot-v3`，產生版本 4，再於終端機 B 啟動 Demo A。有效設定應變為 `snapshot-v3`。Demo B 要重啟後才會取得 `snapshot-v3`，可視需要示範。 |
 
+觀眾若問「這個中央環境現在有哪些設定？」，可在任一步驟後執行呼叫檔最後的**附錄**請求。它只列出設定鍵、版本與狀態，不包含值，也不改變資料，不影響 01–17 的預期結果。
+
 每段請求上方都列出預期狀態碼與關鍵欄位，請對照實際回應。`snapshot-v3` 是值的名稱，不是版本號；Remove 也會增加版本。
 
 要查看資料庫內容時，使用 **03**、**13**、**14** 的 `current` 與 `history` 查詢。用 DB Browser for SQLite 或 `sqlite3` 直接開啟資料庫時，部分查詢會顯示 `no such collation sequence: ORDINAL_IGNORE_CASE`，這不表示資料庫損壞；原因與唯讀查詢方式見[用外部 SQLite 工具查看 Central 資料庫](../knowledge/sqlite-external-tool-collation.md)。不要用外部工具寫入資料庫。

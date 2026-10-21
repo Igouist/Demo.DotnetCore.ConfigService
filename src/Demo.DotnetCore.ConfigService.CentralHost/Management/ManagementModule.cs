@@ -50,6 +50,11 @@ internal sealed class ManagementModule
             ?? throw new ConfigurationEntryNotFoundException();
     }
 
+    public Task<IReadOnlyList<ConfigurationEntrySummary>> ListAsync(
+        EnvironmentName environment,
+        CancellationToken cancellationToken) =>
+        _store.ListEntriesAsync(environment, cancellationToken);
+
     public async Task<ConfigurationHistory> GetHistoryAsync(
         EnvironmentName environment,
         ConfigurationKey key,

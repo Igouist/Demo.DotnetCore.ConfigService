@@ -380,6 +380,88 @@ public sealed class SqliteConfigurationEntryStoreReadTests
         Assert.Equal("The configuration store operation failed.", failure.Message);
     }
 
+    [Fact]
+    public async Task ListEntriesAsync_returns_the_latest_version_of_every_entry_in_one_environment_ordered_by_key()
+    {
+        await using var fixture = await StoreFixture.CreateAsync();
+        var production = EnvironmentName.FromValidated("Production");
+        await fixture.Store.SetAsync(
+            new ConfigurationEntryIdentity(production, ConfigurationKey.FromValidated("Demo:Zeta")),
+            "zeta",
+            FirstTimestamp,
+            CancellationToken.None);
+        await fixture.Store.SetAsync(
+            new ConfigurationEntryIdentity(production, ConfigurationKey.FromValidated("demo:alpha")),
+            "alpha-1",
+            FirstTimestamp,
+            CancellationToken.None);
+        await fixture.Store.SetAsync(
+            new ConfigurationEntryIdentity(production, ConfigurationKey.FromValidated("DEMO:ALPHA")),
+            "alpha-2",
+            FirstTimestamp.AddMinutes(1),
+            CancellationToken.None);
+        await fixture.Store.SetAsync(
+            new ConfigurationEntryIdentity(production, ConfigurationKey.FromValidated("Demo:Beta")),
+            "beta",
+            FirstTimestamp,
+            CancellationToken.None);
+        await fixture.Store.RemoveAsync(
+            new ConfigurationEntryIdentity(production, ConfigurationKey.FromValidated("Demo:Beta")),
+            FirstTimestamp.AddMinutes(2),
+            CancellationToken.None);
+        await fixture.Store.SetAsync(
+            new ConfigurationEntryIdentity(
+                EnvironmentName.FromValidated("UAT"),
+                ConfigurationKey.FromValidated("Demo:OtherEnvironment")),
+            "other",
+            FirstTimestamp,
+            CancellationToken.None);
+
+        var entries = await fixture.Store.ListEntriesAsync(
+            EnvironmentName.FromValidated("pRoDuCtIoN"),
+            CancellationToken.None);
+
+        Assert.Collection(
+            entries,
+            entry => AssertSummary(entry, "demo:alpha", 2, ConfigurationEntryState.Present, FirstTimestamp.AddMinutes(1)),
+            entry => AssertSummary(entry, "Demo:Beta", 2, ConfigurationEntryState.Removed, FirstTimestamp.AddMinutes(2)),
+            entry => AssertSummary(entry, "Demo:Zeta", 1, ConfigurationEntryState.Present, FirstTimestamp));
+        Assert.Empty(await fixture.Store.ListEntriesAsync(
+            EnvironmentName.FromValidated("NeverCreated"),
+            CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task ListEntriesAsync_rejects_an_entry_without_versions_as_a_safe_other_failure()
+    {
+        await using var fixture = await StoreFixture.CreateAsync();
+        await fixture.Store.SetAsync(
+            FirstIdentity,
+            "first-value",
+            FirstTimestamp,
+            CancellationToken.None);
+        await fixture.DeleteVersionsAsync();
+
+        var failure = await Assert.ThrowsAsync<PersistenceFailureException>(() =>
+            fixture.Store.ListEntriesAsync(FirstIdentity.Environment, CancellationToken.None));
+
+        Assert.Equal(PersistenceFailureCategory.Other, failure.Category);
+        Assert.Equal("The configuration store operation failed.", failure.Message);
+    }
+
+    private static void AssertSummary(
+        ConfigurationEntrySummary actual,
+        string key,
+        long version,
+        ConfigurationEntryState state,
+        DateTimeOffset createdAtUtc)
+    {
+        Assert.Equal(key, actual.Key.Value);
+        Assert.Equal(version, actual.Version);
+        Assert.Equal(state, actual.State);
+        Assert.Equal(createdAtUtc, actual.CreatedAtUtc);
+    }
+
     private sealed class StoreFixture : IAsyncDisposable
     {
         private readonly TemporaryDirectory _directory;

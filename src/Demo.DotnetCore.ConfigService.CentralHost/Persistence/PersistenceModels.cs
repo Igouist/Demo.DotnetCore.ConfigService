@@ -42,6 +42,21 @@ internal sealed class StoredReadVersion
     public string? CreatedAtUtc { get; init; }
 }
 
+internal sealed class StoredEntrySummaryRow
+{
+    public string? Environment { get; init; }
+
+    public string? ConfigurationKey { get; init; }
+
+    public long? Version { get; init; }
+
+    public string? Operation { get; init; }
+
+    public string? Value { get; init; }
+
+    public string? CreatedAtUtc { get; init; }
+}
+
 internal sealed class StoredResolutionRow
 {
     public string? ConfigurationKey { get; init; }

@@ -10,6 +10,10 @@ internal interface IConfigurationEntryStore
         ConfigurationEntryIdentity identity,
         CancellationToken cancellationToken);
 
+    Task<IReadOnlyList<ConfigurationEntrySummary>> ListEntriesAsync(
+        EnvironmentName environment,
+        CancellationToken cancellationToken);
+
     Task<IReadOnlyList<StoredResolution>> ResolveExistingAsync(
         EnvironmentName environment,
         IReadOnlyList<ConfigurationKey> keys,
