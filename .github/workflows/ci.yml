@@ -21,10 +21,10 @@ jobs:
       DOTNET_NOLOGO: true
       DOTNET_CLI_TELEMETRY_OPTOUT: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       # SDK 依 global.json；8.0.x 提供測試需要的 .NET 8 ASP.NET Core 執行階段。
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v5
         with:
           global-json-file: global.json
           dotnet-version: 8.0.x
@@ -43,7 +43,7 @@ jobs:
 
       - name: 上傳測試結果
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: test-results-${{ matrix.os }}
           path: TestResults

@@ -66,6 +66,7 @@
 
 - [#12](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/12)：新增 GitHub Actions workflow，以 Linux／Windows 矩陣執行 README「完整驗證」的五個命令，測試失敗時上傳 TRX；README 加上 CI 徽章與說明。EndToEnd.Tests 先留在同一個 job，待實測時間與穩定性後再決定是否拆開。
 - 本機驗證（Linux、SDK 10.0.113）：五個命令全部通過；CentralHost.Tests 192、Client.Tests 189、DemoHost.Tests 12、EndToEnd.Tests 130。`dotnet test` 共 78 秒，其中 EndToEnd.Tests 58 秒。
+- CI 首次執行（PR #17，提交 `2aa424a`）兩個平台都通過：`ubuntu-latest` 整個 job 約 2 分鐘，EndToEnd.Tests 45 秒；`windows-latest` 約 3.5 分鐘，EndToEnd.Tests 63 秒。時間可接受，EndToEnd.Tests 不拆 job。
 
 ### 下一步
 
