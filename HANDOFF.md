@@ -18,7 +18,7 @@
 
 | 項目 | 現況 |
 | --- | --- |
-| Central Config Host | Management 的 Set／Remove／current／history 與中央環境設定鍵列表、Distribution 的 Resolve、SQLite 持久化、`/health/ready` 與啟動識別值，以及記錄完整例外的伺服器端 Error 日誌（以 `traceId` 對應 Problem Details）。 |
+| Central Config Host | Management 的 Set／Remove／current／history 與中央環境設定鍵列表、Distribution 的 Resolve、SQLite 持久化、`/health/ready` 與啟動識別值，以及記錄完整例外的伺服器端 Error 日誌（以 `traceId` 對應 Problem Details）；`/swagger` 提供 Swagger UI。 |
 | Client | 啟動設定與設定鍵選擇驗證、HTTP 分發、有限重試與逾時、啟動診斷（最終失敗帶出中央的 `CentralErrorCode` 與 `CentralTraceId`），以及不重新載入的啟動快照設定提供者。 |
 | Demo Consumer Host | 在啟動時載入中央設定；提供 `Demo` 區段的有效設定，以及明確標示為不安全的根設定診斷端點。 |
 | 測試 | 單元、站內整合／HTTP、套件契約、確定性重試／取消測試，以及使用真正 Central／Demo 程序與 packaged Client 的 E2E 情境 A–J。 |
@@ -68,10 +68,15 @@
 - 本機驗證（Linux、SDK 10.0.113）：五個命令全部通過；CentralHost.Tests 192、Client.Tests 189、DemoHost.Tests 12、EndToEnd.Tests 130。`dotnet test` 共 78 秒，其中 EndToEnd.Tests 58 秒。
 - CI 首次執行（PR #17，提交 `2aa424a`）兩個平台都通過：`ubuntu-latest` 整個 job 約 2 分鐘，EndToEnd.Tests 45 秒；`windows-latest` 約 3.5 分鐘，EndToEnd.Tests 63 秒。時間可接受，EndToEnd.Tests 不拆 job。
 
-### 進行中的變更（分支 `claude/project-thread-uoatc2`，尚未合併）
+### PR #18（已合併，合併提交 `6489e00`）
 
 - [#16](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/16)：移除完整示範手冊，理由見決策紀錄 POC-060。它獨有的兩項內容移到新位置：設定來源優先序的人工展示成為 [HTTP 操作說明](docs/demo/http-demo-guide.md)第 5 節（選用，另啟動 Demo C 於 `5183`，`.http` 新增附錄 B；原附錄改名附錄 A），使用端引用套件的方式寫進 [Client 使用說明](src/Demo.DotnetCore.ConfigService.Client/README.md)的「引用套件」。README、短入門導讀與 Demo／E2E 規格第 10 節同步修訂。
 - 驗證（Linux、PowerShell 7.6、SDK 10.0.113）：以啟動腳本執行 Central，照第 5 節的指令在另一個終端機啟動 Demo C，有效設定依序為 `environment-value`、`command-value`，中央值不變，移除環境變數後 `Test-Path` 為 `False`。照「引用套件」的步驟在儲存庫外封裝並建立一個 `net8.0` 使用端，還原、建置並連到 Central，取得中央值。README「完整驗證」全部通過：format 無變更、Release build 0 warning；CentralHost.Tests 192、Client.Tests 189、DemoHost.Tests 12、EndToEnd.Tests 130。
+
+### 進行中的變更（分支 `claude/project-thread-0pr4qk`，尚未合併）
+
+- [#13](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/13)：Central 以 Swashbuckle 10.3.0（`SwaggerGen`、`SwaggerUI`）提供 OpenAPI 文件 `/swagger/v1/swagger.json` 與 Swagger UI `/swagger`，一律開啟、不列入 `/health/ready`，取捨見決策紀錄 POC-061。控制器不使用模型繫結，所以 Set、Remove、Resolve 以 `JsonRequestBody` 屬性標示請求型別與範例（中央環境 `UAT`），由 `JsonRequestBodyOperationFilter` 寫入文件；回應以 `ProducesResponseType` 標示成功與 `application/problem+json`。既有端點行為不變。README、HTTP 操作說明第 4 節與設計文件第 4 節開頭已提及網址。
+- 驗證（Linux、SDK 10.0.113）：README「完整驗證」全部通過，format 無變更、Release build 0 warning；CentralHost.Tests 200（新增 `OpenApiDocumentTests` 8 個）、Client.Tests 189、DemoHost.Tests 12、EndToEnd.Tests 130。另以真正的 Central 程序（`127.0.0.1:5180`）與 Playwright 操作 Swagger UI，依序對 Set、current、history、列表、Resolve、Remove 按「Try it out」與「Execute」，回應均符合設計文件第 4 節。
 
 ### 下一步
 
