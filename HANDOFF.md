@@ -18,13 +18,37 @@
 
 | 項目 | 現況 |
 | --- | --- |
-| Central Config Host | Management 的 Set／Remove／current／history、Distribution 的 Resolve、SQLite 持久化，以及 `/health/ready` 與啟動識別值。 |
-| Client | 啟動設定與設定鍵選擇驗證、HTTP 分發、有限重試與逾時、啟動診斷，以及不可變的設定提供者。 |
+| Central Config Host | Management 的 Set／Remove／current／history、Distribution 的 Resolve、SQLite 持久化、`/health/ready` 與啟動識別值，以及記錄完整例外的伺服器端 Error 日誌（以 `traceId` 對應 Problem Details）。 |
+| Client | 啟動設定與設定鍵選擇驗證、HTTP 分發、有限重試與逾時、啟動診斷（最終失敗帶出中央的 `CentralErrorCode` 與 `CentralTraceId`），以及不重新載入的啟動快照設定提供者。 |
 | Demo Consumer Host | 在啟動時載入中央設定；提供 `Demo` 區段的有效設定，以及明確標示為不安全的根設定診斷端點。 |
 | 測試 | 單元、站內整合／HTTP、套件契約、確定性重試／取消測試，以及使用真正 Central／Demo 程序與 packaged Client 的 E2E 情境 A–J。 |
 | 文件與演示 | README、設計與決策文件、短入門導讀、完整示範手冊，以及 17 段請求的 `.http` 演示與操作說明。 |
 
 目前跨程序 E2E 使用一個 Central 與一個 Demo。HTTP 演示使用一個 Central 與兩個 Demo，展示兩個使用端共用同一份中央值，以及必要設定鍵缺值時的啟動失敗；它以 `ProjectReference` 連結 Client，並由人員逐段呼叫、手動重啟，不取代使用真正 NuGet 套件的 E2E 或完整示範手冊。
+
+### 最近完成的工作
+
+示範前審查（[PR #1](https://github.com/Igouist/Demo.DotnetCore.ConfigService/pull/1)，合併提交 `5a9e6c5`）完成下列修正：
+
+- 啟動快照設定提供者接受 `IConfiguration[key] = value` 寫入，使用端在 `AddCentralConfigAsync` 之後呼叫 `WebHost.UseUrls`／`UseSetting` 不再啟動失敗。
+- Demo 的 `failed` 事件列出缺少的中央必要設定鍵，並帶出中央的錯誤代碼與 `traceId`。
+- Central 的 Error 日誌記錄完整例外；伺服器端日誌界線見決策紀錄 POC-052 的 2026-10-21 修訂。
+- `global.json` 接受任一 SDK 10.0.x；SDK 8 的編譯器與格式檢查不相容。
+- HTTP 演示擴充為兩個 Demo 與 17 段請求。
+- 修正兩個在負載下不穩定的測試：Client 測試的執行緒池飢餓、E2E 取消回呼的競態。
+
+### 目前驗證結果
+
+- 環境：Linux、SDK 10.0.113、.NET 8 ASP.NET Core 執行階段；對應提交 `3c2893b`（已含於 `5a9e6c5`）。
+- README「完整驗證」全部通過：format 無變更、Release build 0 warning；CentralHost.Tests 185、Client.Tests 187、DemoHost.Tests 12、EndToEnd.Tests 130。
+- HTTP 演示的 17 段請求已以等效 bash 指令在 Linux 上逐段驗證；操作說明的 PowerShell 指令尚未在 Windows 上執行。
+
+### 下一步
+
+1. [#2](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/2)：在 Windows 上實際走一次 HTTP 演示。
+2. [#3](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/3)：在示範會議上取得架構決策共識，結論寫回決策紀錄，再依結論開立後續 Issue。
+
+其他待辦以 [GitHub Issues](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues) 為準，本文件不重複列出。
 
 ## 3. 延續已接受的設計
 
