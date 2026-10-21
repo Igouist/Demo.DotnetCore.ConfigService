@@ -38,12 +38,14 @@ internal sealed class StartupLogEmitter(ILogger? logger)
             LogLevel.Error,
             target => target.LogError(
                 exception,
-                "Central configuration load failed: {FailureKind}; attempts {AttemptCount}; elapsed {ElapsedMs} ms; Environment {Environment}; missing required keys {MissingRequiredKeys}.",
+                "Central configuration load failed: {FailureKind}; attempts {AttemptCount}; elapsed {ElapsedMs} ms; Environment {Environment}; missing required keys {MissingRequiredKeys}; central error code {CentralErrorCode}; central trace id {CentralTraceId}.",
                 exception.FailureKind,
                 exception.AttemptCount,
                 exception.Elapsed.TotalMilliseconds,
                 exception.Environment,
-                exception.MissingRequiredKeys));
+                exception.MissingRequiredKeys,
+                exception.CentralErrorCode,
+                exception.CentralTraceId));
 
     private void TryEmit(LogLevel level, Action<ILogger> emit)
     {

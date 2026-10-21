@@ -733,7 +733,7 @@ GET /api/v1/demo/effective-configuration
 | --- | --- |
 | `loaded` | `source`, `event`, `valueCount`, `missingFallbackKeyCount`, `attemptCount`, `elapsedMs` |
 | `retry` | `source`, `event`, `attemptCount`, `failureKind`, `httpStatusCode`, `delayMs` |
-| `failed` | `source`, `event`, `failureKind`, `attemptCount`, `httpStatusCode`, `elapsedMs`, `missingRequiredKeys` |
+| `failed` | `source`, `event`, `failureKind`, `attemptCount`, `httpStatusCode`, `elapsedMs`, `missingRequiredKeys`, `centralErrorCode`, `centralTraceId` |
 
 ## 展示優先序與啟動快照
 

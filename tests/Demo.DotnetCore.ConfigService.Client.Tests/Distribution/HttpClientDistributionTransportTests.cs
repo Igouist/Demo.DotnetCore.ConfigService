@@ -47,6 +47,67 @@ public sealed class HttpClientDistributionTransportTests
     }
 
     [Fact]
+    public async Task Problem_details_body_yields_only_the_validated_code_and_trace_id()
+    {
+        var handler = new RecordingHandler(
+            HttpStatusCode.InternalServerError,
+            """
+            {"type":"about:blank","title":"Internal Server Error","status":500,
+             "detail":"raw-central-text-sentinel","code":"persistence_failure",
+             "traceId":"00-0123456789abcdef0123456789abcdef-0123456789abcdef-00"}
+            """,
+            "application/problem+json");
+        using var client = new HttpClient(handler) { Timeout = Timeout.InfiniteTimeSpan };
+        var transport = new HttpClientDistributionTransport(client);
+
+        DistributionHttpResponse result = await transport.ResolveAsync(
+            new Uri("https://central/api/v1/distribution/configurations/resolve"),
+            new DistributionResolveRequest("UAT", ["Demo:A"]),
+            CancellationToken.None);
+
+        Assert.Equal(HttpStatusCode.InternalServerError, result.StatusCode);
+        Assert.True(result.Body.IsEmpty);
+        Assert.Equal(
+            new CentralProblemReference(
+                "persistence_failure",
+                "00-0123456789abcdef0123456789abcdef-0123456789abcdef-00"),
+            result.Problem);
+    }
+
+    [Fact]
+    public async Task Problem_details_read_failure_keeps_only_the_status()
+    {
+        var handler = new ThrowingContentHandler(HttpStatusCode.BadGateway, "application/problem+json");
+        using var client = new HttpClient(handler) { Timeout = Timeout.InfiniteTimeSpan };
+        var transport = new HttpClientDistributionTransport(client);
+
+        DistributionHttpResponse result = await transport.ResolveAsync(
+            new Uri("https://central/api/v1/distribution/configurations/resolve"),
+            new DistributionResolveRequest("UAT", ["Demo:A"]),
+            CancellationToken.None);
+
+        Assert.Equal(HttpStatusCode.BadGateway, result.StatusCode);
+        Assert.Null(result.Problem);
+    }
+
+    [Fact]
+    public async Task Caller_token_covers_the_problem_details_body_read()
+    {
+        var handler = new BlockingContentHandler(HttpStatusCode.ServiceUnavailable, "application/problem+json");
+        using var client = new HttpClient(handler) { Timeout = Timeout.InfiniteTimeSpan };
+        var transport = new HttpClientDistributionTransport(client);
+        using var cancellation = new CancellationTokenSource();
+
+        Task<DistributionHttpResponse> load = transport.ResolveAsync(
+            new Uri("https://central/api/v1/distribution/configurations/resolve"),
+            new DistributionResolveRequest("UAT", ["Demo:A"]),
+            cancellation.Token);
+        cancellation.Cancel();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => load);
+    }
+
+    [Fact]
     public async Task Caller_token_covers_the_200_response_body_read()
     {
         var handler = new BlockingContentHandler();
@@ -63,7 +124,10 @@ public sealed class HttpClientDistributionTransportTests
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => load);
     }
 
-    private sealed class RecordingHandler(HttpStatusCode statusCode, string body) : HttpMessageHandler
+    private sealed class RecordingHandler(
+        HttpStatusCode statusCode,
+        string body,
+        string mediaType = "application/json") : HttpMessageHandler
     {
         internal HttpMethod? Method { get; private set; }
         internal Uri? Uri { get; private set; }
@@ -80,25 +144,39 @@ public sealed class HttpClientDistributionTransportTests
             RequestBody = await request.Content!.ReadAsStringAsync(cancellationToken);
             return new HttpResponseMessage(statusCode)
             {
-                Content = new StringContent(body, Encoding.UTF8, "application/json")
+                Content = new StringContent(body, Encoding.UTF8, mediaType)
             };
         }
     }
 
-    private sealed class ThrowingContentHandler(HttpStatusCode statusCode) : HttpMessageHandler
+    private sealed class ThrowingContentHandler(
+        HttpStatusCode statusCode,
+        string? mediaType = null) : HttpMessageHandler
     {
         protected override Task<HttpResponseMessage> SendAsync(
             HttpRequestMessage request,
             CancellationToken cancellationToken) =>
-            Task.FromResult(new HttpResponseMessage(statusCode) { Content = new ThrowingContent() });
+            Task.FromResult(new HttpResponseMessage(statusCode) { Content = WithMediaType(new ThrowingContent(), mediaType) });
     }
 
-    private sealed class BlockingContentHandler : HttpMessageHandler
+    private sealed class BlockingContentHandler(
+        HttpStatusCode statusCode = HttpStatusCode.OK,
+        string? mediaType = null) : HttpMessageHandler
     {
         protected override Task<HttpResponseMessage> SendAsync(
             HttpRequestMessage request,
             CancellationToken cancellationToken) =>
-            Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new BlockingContent() });
+            Task.FromResult(new HttpResponseMessage(statusCode) { Content = WithMediaType(new BlockingContent(), mediaType) });
+    }
+
+    private static HttpContent WithMediaType(HttpContent content, string? mediaType)
+    {
+        if (mediaType is not null)
+        {
+            content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(mediaType);
+        }
+
+        return content;
     }
 
     private sealed class ThrowingContent : HttpContent

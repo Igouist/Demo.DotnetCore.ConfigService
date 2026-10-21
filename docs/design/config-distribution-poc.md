@@ -698,10 +698,14 @@ public sealed class CentralConfigLoadException : Exception
     public HttpStatusCode? HttpStatusCode { get; }
     public string? Environment { get; }
     public IReadOnlyList<string> MissingRequiredKeys { get; }
+    public string? CentralErrorCode { get; }
+    public string? CentralTraceId { get; }
 }
 ```
 
 確切的建構函式由套件定義。HTTP 嘗試之前發生失敗時，`AttemptCount` 為零；其他情況則記錄已完成或最終失敗的嘗試次數。`Elapsed` 是從進入登錄方法至最終分類的單調時間長度。除非 HTTP 回應決定了最終失敗，否則 `HttpStatusCode` 為 null；除非已解析出有效的中央環境，否則 `Environment` 為 null。`MissingRequiredKeys` 是不可為 null 的唯讀清單，只在對應的失敗種類下包含依宣告順序排列、去除重複的使用端宣告拼寫；其他情況則為空清單。例外訊息是依 `FailureKind` 決定的固定安全文字，絕不包含設定值、本文、原始剖析器訊息或原始中央錯誤細節。
+
+`CentralErrorCode` 與 `CentralTraceId` 只在最終的非 `200` HTTP 回應決定失敗（`Unauthorized` 或 `HttpFailure`）時才可能有值，來自該次回應的 Problem Details。用戶端只在回應的媒體類型為 `application/problem+json` 時讀取非 `200` 本文，且只取出 `code` 與 `traceId` 兩個字串：`code` 必須符合 `^[a-z][a-z0-9_]{0,63}$`，`traceId` 必須是 W3C traceparent 或 ASP.NET Core 的 `TraceIdentifier` 格式（比對以字串結尾為界，不接受結尾換行）。不符合格式的欄位視為不存在，其他成員一律忽略，原始本文不離開 HTTP 轉接器；讀取失敗也不改變依 HTTP 狀態決定的分類與重試。這兩個值是中央產生的識別碼，不是原始中央錯誤文字，讓使用端可以用 `traceId` 對應中央主機日誌中的同一筆記錄。
 
 POC 失敗對應如下：
 
@@ -746,7 +750,7 @@ POC 失敗對應如下：
 
 套件發起的每次日誌記錄器呼叫，包括 `IsEnabled`，都經過同一個盡力而為的安全輸出接縫，以隔離可攔截的同步日誌記錄器例外。日誌記錄器失敗絕不改變載入、重試、取消、設定提供者插入，或最終擲出的例外。此失敗不會重試、遞迴記錄、暴露於公開例外，或傳送至其他輸出。詳見[呼叫端提供的啟動 Logger](../knowledge/caller-supplied-startup-logger.md)。
 
-缺少的中央必要設定鍵名稱可以出現在具型別例外及最終 Error 日誌中。成功的設定鍵與缺少的允許後備設定鍵只以數量摘要呈現。設定值、連線字串、認證資訊、授權標頭、權杖、Cookie、本文、原始中央文字，以及未經審查的剖析器或例外訊息，絕不進入套件例外或日誌。
+缺少的中央必要設定鍵名稱，以及第 9.1 節驗證過的 `CentralErrorCode` 與 `CentralTraceId`，可以出現在具型別例外及最終 Error 日誌中。成功的設定鍵與缺少的允許後備設定鍵只以數量摘要呈現。設定值、連線字串、認證資訊、授權標頭、權杖、Cookie、本文、原始中央文字，以及未經審查的剖析器或例外訊息，絕不進入套件例外或日誌。
 
 ## 10. 示範使用端主機
 

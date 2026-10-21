@@ -120,6 +120,39 @@ public sealed class CentralConfigRegistrationTests
     }
 
     [Fact]
+    public async Task Final_http_failure_carries_the_central_error_code_and_trace_id_of_the_last_attempt()
+    {
+        using var host = EnabledHost();
+        var transport = new FakeDistributionTransport();
+        transport.EnqueueResponse(new DistributionHttpResponse(
+            HttpStatusCode.InternalServerError,
+            ReadOnlyMemory<byte>.Empty,
+            new CentralProblemReference("persistence_failure", "0HN1FIRST:00000001")));
+        transport.EnqueueResponse(new DistributionHttpResponse(
+            HttpStatusCode.BadRequest,
+            ReadOnlyMemory<byte>.Empty,
+            new CentralProblemReference("validation_failed", "0HN1FINAL:00000002")));
+        var logger = new RecordingLogger();
+        var timeProvider = new FakeTimeProvider();
+        var registration = CreateRegistration(transport, timeProvider, new FixedRetryJitter(TimeSpan.Zero));
+
+        Task registering = registration.RegisterAsync(host.Builder, logger, CancellationToken.None);
+        await transport.WaitForNextCallAsync();
+        await logger.WaitForEntryCountAsync(1);
+        timeProvider.Advance(TimeSpan.FromSeconds(1));
+        await transport.WaitForNextCallAsync();
+
+        CentralConfigLoadException exception = await Assert.ThrowsAsync<CentralConfigLoadException>(() => registering);
+
+        Assert.Equal(CentralConfigFailureKind.HttpFailure, exception.FailureKind);
+        Assert.Equal(HttpStatusCode.BadRequest, exception.HttpStatusCode);
+        Assert.Equal("validation_failed", exception.CentralErrorCode);
+        Assert.Equal("0HN1FINAL:00000002", exception.CentralTraceId);
+        LogEntry error = logger.Entries.Single(entry => entry.Level == LogLevel.Error);
+        Assert.Contains(error.Fields, field => field.Key == "CentralTraceId" && Equals(field.Value, "0HN1FINAL:00000002"));
+    }
+
+    [Fact]
     public async Task Missing_anchor_fails_before_network_as_invalid_pipeline()
     {
         using var host = EnabledHost();

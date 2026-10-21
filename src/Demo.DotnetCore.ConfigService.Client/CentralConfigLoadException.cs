@@ -11,7 +11,8 @@ public sealed class CentralConfigLoadException : Exception
         TimeSpan elapsed,
         HttpStatusCode? httpStatusCode,
         string? environment,
-        IEnumerable<string>? missingRequiredKeys = null)
+        IEnumerable<string>? missingRequiredKeys = null,
+        CentralProblemReference? centralProblem = null)
         : base(GetSafeMessage(failureKind))
     {
         FailureKind = failureKind;
@@ -19,6 +20,8 @@ public sealed class CentralConfigLoadException : Exception
         Elapsed = elapsed;
         HttpStatusCode = httpStatusCode;
         Environment = environment;
+        CentralErrorCode = centralProblem?.Code;
+        CentralTraceId = centralProblem?.TraceId;
 
         string[] keys = failureKind == CentralConfigFailureKind.MissingRequiredKeys
             ? missingRequiredKeys?.Distinct(StringComparer.OrdinalIgnoreCase).ToArray() ?? []
@@ -37,6 +40,12 @@ public sealed class CentralConfigLoadException : Exception
     public string? Environment { get; }
 
     public IReadOnlyList<string> MissingRequiredKeys { get; }
+
+    // From the final Central Problem Details response; null when no validated value was returned.
+    public string? CentralErrorCode { get; }
+
+    // Correlates this failure with the Central Host log entry for the final attempt.
+    public string? CentralTraceId { get; }
 
     private static string GetSafeMessage(CentralConfigFailureKind failureKind) => failureKind switch
     {
