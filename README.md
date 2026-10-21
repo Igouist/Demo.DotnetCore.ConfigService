@@ -148,7 +148,7 @@ pwsh ./scripts/start-http-demo.ps1
 
 ### 在瀏覽器查看與試打 API
 
-Central 啟動後，用瀏覽器開啟 `http://127.0.0.1:5180/swagger`（用啟動腳本時的位址；自行啟動時換成 Central 實際監聽的位址）。Swagger UI 列出 Management 與 Distribution 的每個端點、請求本文、成功回應與 Problem Details 錯誤回應；按「Try it out」再按「Execute」即可直接呼叫。請求本文的預設範例使用中央環境 `UAT`，不會動到 `.http` 演示的 `HttpDemo` 資料。OpenAPI 文件位於 `/swagger/v1/swagger.json`。取捨見決策紀錄 POC-061。
+Central 啟動後，用瀏覽器開啟 `http://127.0.0.1:5180/swagger`（用啟動腳本時的位址；自行啟動時換成 Central 實際監聽的位址）。Swagger UI 列出 Management 與 Distribution 的每個端點，以中文說明用途、參數與每種回應（包含 Problem Details 的錯誤代碼）；按「Try it out」再按「Execute」即可直接呼叫。請求本文的預設範例使用中央環境 `UAT`，不會動到 `.http` 演示的 `HttpDemo` 資料。OpenAPI 文件位於 `/swagger/v1/swagger.json`。取捨見決策紀錄 POC-061。
 
 ## 使用 Client package
 

@@ -25,6 +25,8 @@ public sealed class OpenApiDocumentTests
             .GetProperty("paths")
             .GetProperty(path)
             .GetProperty(method);
+        Assert.False(string.IsNullOrWhiteSpace(operation.GetProperty("summary").GetString()));
+        Assert.False(string.IsNullOrWhiteSpace(operation.GetProperty("description").GetString()));
         Assert.Equal(hasJsonBody, operation.TryGetProperty("requestBody", out JsonElement requestBody));
         if (hasJsonBody)
         {
@@ -39,10 +41,11 @@ public sealed class OpenApiDocumentTests
             .GetProperty(successStatus)
             .GetProperty("content")
             .TryGetProperty("application/json", out _));
-        Assert.True(responses
-            .GetProperty("400")
+        JsonElement validationFailure = responses.GetProperty("400");
+        Assert.True(validationFailure
             .GetProperty("content")
             .TryGetProperty("application/problem+json", out _));
+        Assert.Contains("validation_failed", validationFailure.GetProperty("description").GetString());
     }
 
     [Fact]

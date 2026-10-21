@@ -20,6 +20,7 @@ internal static class CentralHostOpenApi
                     "Management 與 Distribution 介面。只在隔離環境使用非敏感資料；" +
                     "錯誤回應為 Problem Details，`code` 為穩定的錯誤代碼，`traceId` 可對應 Central 日誌。"
             });
+            options.EnableAnnotations();
             options.SupportNonNullableReferenceTypes();
             options.OperationFilter<JsonRequestBodyOperationFilter>();
         });
