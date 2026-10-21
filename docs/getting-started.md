@@ -2,7 +2,7 @@
 
 如果你看得懂基本 C# 與 JSON，但還不熟悉 .NET 設定機制，可以先讀這篇。本文先說明概念，再用一個設定鍵走過完整流程；不必先讀完設計規格。
 
-本文的程式碼與回應用來說明行為，不是一份可整段貼上執行的腳本。實際操作請使用最後連結的示範手冊。
+本文的程式碼與回應用來說明行為，不是一份可整段貼上執行的腳本。實際操作請使用最後連結的 HTTP 演示。
 
 ## 1. 這個專案在解決什麼問題？
 
@@ -52,7 +52,7 @@ string? message = configuration["Demo:FallbackAllowedMessage"];
 
 以下使用 `Demo:CentralRequiredMessage`，它已列在示範應用程式的 `CentralRequiredKeys` 中。
 
-本專案的示範設定預設為 `CentralConfig:Enabled=false`，也就是只使用本機設定。下面的故事採用示範手冊的啟動條件：啟用中央載入，並選擇中央環境 `UAT`。所有值都是合成的示範資料。
+本專案的示範設定預設為 `CentralConfig:Enabled=false`，也就是只使用本機設定。下面的故事假設已啟用中央載入，並選擇中央環境 `UAT`。所有值都是合成的示範資料。
 
 ### 第一步：把值放到中央
 
@@ -140,9 +140,9 @@ var app = builder.Build();
 
 1. 回到 [README](../README.md)，對照架構圖、專案分工與必要工具。
 2. 閱讀 [Client 使用說明](../src/Demo.DotnetCore.ConfigService.Client/README.md)，確認完整設定格式及呼叫方式。
-3. 使用 [POC 示範手冊](demo/config-distribution-poc-runbook.md)，在隔離環境實際驗證上述行為。需要指定的 .NET SDK 與 PowerShell 7 以上版本；只使用非敏感資料。
+3. 依 [HTTP 演示操作說明](demo/http-demo-guide.md)，用一個指令啟動 Central 與兩個 Demo，逐段觀察上述行為。需要指定的 .NET SDK 與 PowerShell；只使用非敏感資料。
 4. 想知道設計理由，再讀 [共享中央值](adr/0001-share-value-by-environment-and-key.md)與[使用端擁有設定鍵選擇](adr/0002-consumer-owned-key-selection.md)兩份 ADR（架構決策紀錄）。
 
-示範手冊會封裝套件、啟動程序、驗證結果並清理本次建立的資料，所以比這份導讀長。請依手冊執行完整區塊，不要為了逐步教學而拆開 `try`／`finally` 的清理流程。POC 端點沒有身分驗證；第一次示範不需要呼叫 `unsafe-root` 診斷端點，在提示時不要輸入 `YES` 即可略過。
+HTTP 演示使用中央環境 `HttpDemo` 而不是 `UAT`。設定來源優先序在操作說明的選用段落另外示範。POC 端點沒有身分驗證，請只在本機隔離環境操作。
 
 完整設計、Readiness（就緒探針）、E2E（端對端測試）、HTTP 限制與 .NET Framework 相容性，都是後續按需查閱的資料，不必在第一次閱讀時全部掌握。文件入口見 [README 的維護與文件](../README.md#維護與文件)。

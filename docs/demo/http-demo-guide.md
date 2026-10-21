@@ -8,9 +8,9 @@
 
 需要任一 .NET SDK 10.0.x（見 [`global.json`](../../global.json)）、.NET 8 ASP.NET Core 執行階段、Windows PowerShell 5.1 或 PowerShell 7 以上版本，以及支援 `.http` 請求檔的編輯器或工具。
 
-這個短演示使用 `ProjectReference` 連結 Client。若要驗證真正的 NuGet 封裝、完整情境與安全自動清理，請使用 [完整示範手冊](config-distribution-poc-runbook.md)；不要在手冊結束後直接執行本呼叫檔，因為手冊會停止它啟動的服務。
+這個短演示使用 `ProjectReference` 連結 Client。使用真正 NuGet 套件的完整情境由 E2E 測試自動驗證（見 README 的「完整驗證」）；使用端如何引用套件，見 [Client 使用說明](../../src/Demo.DotnetCore.ConfigService.Client/README.md)。
 
-確認本機連接埠 `5180`、`5181`、`5182` 未被其他服務使用；腳本啟動前會檢查，已被使用就停止。如果需要改連接埠，請同步修改 [`scripts/start-http-demo.ps1`](../../scripts/start-http-demo.ps1) 頂端的連接埠，以及 `.http` 頂端的 `centralUrl`、`demoAUrl`、`demoBUrl`。
+確認本機連接埠 `5180`、`5181`、`5182` 未被其他服務使用；腳本啟動前會檢查，已被使用就停止。選用的第 5 節另外使用 `5183`。如果需要改連接埠，請同步修改 [`scripts/start-http-demo.ps1`](../../scripts/start-http-demo.ps1) 頂端的連接埠，以及 `.http` 頂端的 `centralUrl`、`demoAUrl`、`demoBUrl`、`demoCUrl`。
 
 ## 2. 用一個指令啟動 Central
 
@@ -63,7 +63,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\start-http-demo.ps1
 | 15 | 在腳本輸入 `A`，只重啟 Demo A。Demo A 會在幾秒內啟動失敗，腳本顯示 `"event":"failed"`、`"failureKind":"MissingRequiredKeys"` 與 `"missingRequiredKeys":["Demo:CentralRequiredMessage"]`，接著顯示「沒有開始監聽，程序已結束」與非零結束代碼（Linux 為 134）；未處理例外的完整內容在顯示的日誌檔中。這是刻意的快速失敗：必要設定缺值時，應用程式不會帶著錯誤設定上線。接著執行 **15**，查詢仍在執行的 Demo B，它仍回傳 `snapshot-v2`。 |
 | 16–17 | 先 Set 還原為 `snapshot-v3`，產生版本 4，再於腳本輸入 `A` 啟動 Demo A。有效設定應變為 `snapshot-v3`。Demo B 要重啟（輸入 `B`）後才會取得 `snapshot-v3`，可視需要示範。 |
 
-觀眾若問「這個中央環境現在有哪些設定？」，可在任一步驟後執行呼叫檔最後的**附錄**請求。它只列出設定鍵、版本與狀態，不包含值，也不改變資料，不影響 01–17 的預期結果。
+觀眾若問「這個中央環境現在有哪些設定？」，可在任一步驟後執行呼叫檔的**附錄 A** 請求。它只列出設定鍵、版本與狀態，不包含值，也不改變資料，不影響 01–17 的預期結果。
 
 每段請求上方都列出預期狀態碼與關鍵欄位，請對照實際回應。`snapshot-v3` 是值的名稱，不是版本號；Remove 也會增加版本。
 
@@ -71,15 +71,60 @@ powershell -ExecutionPolicy Bypass -File .\scripts\start-http-demo.ps1
 
 若要從頭重做，在腳本輸入 `Q`，再重新執行腳本，它會建立新資料庫。重複 Set 會繼續附加版本，重複 Remove 已移除的設定會回傳 `409`，不能把請求當成不會改變狀態的查詢。
 
-## 5. 結束
+## 5. 選用：設定來源優先序
 
-在腳本輸入 `Q`，或按 `Ctrl+C`。腳本會停止它啟動的 Demo A、Demo B 與 Central，再刪除本次的 `config-http-demo-*` 暫存目錄（包含 SQLite 資料庫、可能存在的 WAL／SHM 檔案與日誌）。看到「已刪除本次演示資料」即完成清理。
+這段展示中央值不是最終答案：使用端自己的環境變數與命令列仍可覆寫它，優先序由低到高為基底 JSON、主機環境 JSON、中央快照、User Secrets、環境變數、命令列。它另外啟動一個 Demo C（`5183`），不影響 Demo A、B 與 01–17 的預期結果。
+
+中央的 `Demo:CentralRequiredMessage` 必須有值，因為必要設定鍵在中央缺值時，即使本機有覆寫，Demo 仍會啟動失敗。所以請在 **06** 之後、**12** 之前，或 **17** 之後進行，不要在 12–16 之間。
+
+開一個新的 PowerShell 終端機 D，從專案根目錄設定環境變數並啟動 Demo C：
+
+```powershell
+$demoDll = 'src/Demo.DotnetCore.ConfigService.DemoHost/bin/Release/net8.0/Demo.DotnetCore.ConfigService.DemoHost.dll'
+$demoContentRoot = (Resolve-Path 'src/Demo.DotnetCore.ConfigService.DemoHost').Path
+$env:Demo__CentralRequiredMessage = 'environment-value'
+
+dotnet $demoDll `
+    --contentRoot "$demoContentRoot" `
+    --urls http://127.0.0.1:5183 `
+    --CentralConfig:Enabled true `
+    --CentralConfig:BaseAddress http://127.0.0.1:5180/ `
+    --CentralConfig:Environment HttpDemo
+```
+
+執行 **附錄 B**：`CentralRequiredMessage` 是 `environment-value`，環境變數蓋過了中央值。
+
+在終端機 D 按 `Ctrl+C` 停止 Demo C，再加上同名的命令列覆寫啟動：
+
+```powershell
+dotnet $demoDll `
+    --contentRoot "$demoContentRoot" `
+    --urls http://127.0.0.1:5183 `
+    --CentralConfig:Enabled true `
+    --CentralConfig:BaseAddress http://127.0.0.1:5180/ `
+    --CentralConfig:Environment HttpDemo `
+    --Demo:CentralRequiredMessage command-value
+```
+
+再次執行 **附錄 B**：值變為 `command-value`，命令列又蓋過了環境變數。中央值本身沒有改變，可用 **03** 確認。
+
+完成後在終端機 D 按 `Ctrl+C` 停止 Demo C，並移除環境變數：
+
+```powershell
+Remove-Item Env:\Demo__CentralRequiredMessage
+```
+
+環境變數只存在於終端機 D 的工作階段。這也是啟動腳本發現 `Demo__` 開頭的環境變數時拒絕啟動的原因：它會讓 Demo A、B 的結果與 `.http` 的預期不同。
+
+## 6. 結束
+
+若進行了第 5 節，先確認終端機 D 的 Demo C 已停止。接著在腳本輸入 `Q`，或按 `Ctrl+C`。腳本會停止它啟動的 Demo A、Demo B 與 Central，再刪除本次的 `config-http-demo-*` 暫存目錄（包含 SQLite 資料庫、可能存在的 WAL／SHM 檔案與日誌）。看到「已刪除本次演示資料」即完成清理。
 
 腳本以強制結束的方式停止程序，不等待正常關機；這對只放非敏感暫存資料的演示沒有影響。若想在結束後查看資料庫或日誌，以 `-KeepData` 啟動腳本，結束時會保留暫存目錄並顯示路徑，看完後自行刪除該目錄。只刪除顯示的確切目錄，不要刪除整個系統暫存目錄。
 
 ## 附錄：不使用腳本的手動流程
 
-腳本取代的是上述第 2、3、5 節的手動操作；`.http` 的 01–17 不變。需要逐一看見三個程序的即時輸出，或腳本在某個環境無法執行時，可改用三個終端機手動操作。以下命令皆從專案根目錄執行。
+腳本取代的是上述第 2、3、6 節的手動操作；`.http` 的 01–17 不變。需要逐一看見三個程序的即時輸出，或腳本在某個環境無法執行時，可改用三個終端機手動操作。以下命令皆從專案根目錄執行。
 
 先還原與建置：
 

@@ -4,6 +4,42 @@
 
 > 此 POC 不適用於正式環境。它不提供身分驗證、授權、認證資料、強制 TLS、執行階段更新、離線快取或正式環境維運限制。請在隔離環境中使用非敏感的示範設定。
 
+## 引用套件
+
+POC 不發佈到公開或公司內部的套件來源。從本儲存庫的根目錄封裝到本機資料夾：
+
+```powershell
+dotnet pack src/Demo.DotnetCore.ConfigService.Client/Demo.DotnetCore.ConfigService.Client.csproj -c Release -p:PackageVersion=0.1.0 -o artifacts/feed
+```
+
+在使用端專案旁放一份 `NuGet.Config`，把該資料夾加為套件來源。`packageSourceMapping` 讓這個套件只從本機資料夾還原，不會誤用其他來源上同名的套件；其餘套件仍從 nuget.org 還原：
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<configuration>
+  <packageSources>
+    <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />
+    <add key="config-client" value="path/to/artifacts/feed" />
+  </packageSources>
+  <packageSourceMapping>
+    <packageSource key="config-client">
+      <package pattern="Demo.DotnetCore.ConfigService.Client" />
+    </packageSource>
+    <packageSource key="nuget.org">
+      <package pattern="*" />
+    </packageSource>
+  </packageSourceMapping>
+</configuration>
+```
+
+使用端專案的目標架構需為 `net8.0` 以上，並加入：
+
+```xml
+<PackageReference Include="Demo.DotnetCore.ConfigService.Client" Version="0.1.0" />
+```
+
+NuGet 會以版本號快取已還原的套件。修改 Client 後若以相同版本號重新封裝，使用端仍會用到快取中的舊版；請改用新的版本號，或先移除全域套件資料夾（`dotnet nuget locals global-packages --list` 顯示位置）中的 `demo.dotnetcore.configservice.client/0.1.0`。
+
 ## 註冊方式
 
 建立主機建構器（Host builder）後、呼叫 `Build()` 前，選擇一個多載呼叫，並以 await 等待完成。只能註冊一次：
