@@ -41,11 +41,13 @@
 
 - 環境：Linux、SDK 10.0.113、.NET 8 ASP.NET Core 執行階段；對應提交 `3c2893b`（已含於 `5a9e6c5`）。
 - README「完整驗證」全部通過：format 無變更、Release build 0 warning；CentralHost.Tests 185、Client.Tests 187、DemoHost.Tests 12、EndToEnd.Tests 130。
-- HTTP 演示的 17 段請求已以等效 bash 指令在 Linux 上逐段驗證；操作說明的 PowerShell 指令尚未在 Windows 上執行。
+- HTTP 演示的 17 段請求已以等效 bash 指令在 Linux 上逐段驗證。
+- [#2](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/2) 第一段（2026-10-21，對應提交 `e61066f`）：在 Linux 以 PowerShell 7.6.7 執行操作說明的全部 PowerShell 指令。指令以互動方式逐段貼入三個 tmux 終端機，使用真正的 `Ctrl+C` 停止與重啟；`.http` 的 01–17 以 httpyac 6.16.7 逐段送出（`httpyac send --line <行號>`）。每段的狀態碼與關鍵欄位均符合預期；第 15 步 Demo A 輸出 `"missingRequiredKeys":["Demo:CentralRequiredMessage"]` 後以非零代碼結束（Linux 為 134）。操作說明第 5 節補上移除暫存目錄的 PowerShell 指令。
+- 尚未在 Windows 上執行，也尚未以 Windows PowerShell 5.1 驗證。
 
 ### 下一步
 
-1. [#2](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/2)：在 Windows 上實際走一次 HTTP 演示。
+1. [#2](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/2) 第二段：維護者在 Windows 上實際走一次 HTTP 演示，留意 PowerShell 版本、系統保留的連接埠範圍、示範當天使用的 `.http` 工具，以及 `Ctrl+C` 後連接埠是否釋放。
 2. [#3](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/3)：在示範會議上取得架構決策共識，結論寫回決策紀錄，再依結論開立後續 Issue。
 
 其他待辦以 [GitHub Issues](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues) 為準，本文件不重複列出。
