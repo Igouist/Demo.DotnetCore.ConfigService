@@ -23,15 +23,18 @@ internal sealed class StartupLogEmitter(ILogger? logger)
         int attemptCount,
         CentralConfigFailureKind failureKind,
         HttpStatusCode? httpStatusCode,
-        TimeSpan delay) =>
+        TimeSpan delay,
+        CentralProblemReference? centralProblem = null) =>
         TryEmit(
             LogLevel.Warning,
             target => target.LogWarning(
-                "Central configuration retry scheduled after attempt {AttemptCount}: {FailureKind}; HTTP status {HttpStatusCode}; delay {DelayMs} ms.",
+                "Central configuration retry scheduled after attempt {AttemptCount}: {FailureKind}; HTTP status {HttpStatusCode}; delay {DelayMs} ms; central error code {CentralErrorCode}; central trace id {CentralTraceId}.",
                 attemptCount,
                 failureKind,
                 httpStatusCode is null ? null : (int)httpStatusCode.Value,
-                delay.TotalMilliseconds));
+                delay.TotalMilliseconds,
+                centralProblem?.Code,
+                centralProblem?.TraceId));
 
     internal void TryError(CentralConfigLoadException exception) =>
         TryEmit(

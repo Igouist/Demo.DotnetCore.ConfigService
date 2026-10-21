@@ -732,7 +732,7 @@ GET /api/v1/demo/effective-configuration
 | 事件 | 確切的 JSON 成員 |
 | --- | --- |
 | `loaded` | `source`, `event`, `valueCount`, `missingFallbackKeyCount`, `attemptCount`, `elapsedMs` |
-| `retry` | `source`, `event`, `attemptCount`, `failureKind`, `httpStatusCode`, `delayMs` |
+| `retry` | `source`, `event`, `attemptCount`, `failureKind`, `httpStatusCode`, `delayMs`, `centralErrorCode`, `centralTraceId` |
 | `failed` | `source`, `event`, `failureKind`, `attemptCount`, `httpStatusCode`, `elapsedMs`, `missingRequiredKeys`, `centralErrorCode`, `centralTraceId` |
 
 ## 展示優先序與啟動快照

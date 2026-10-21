@@ -100,10 +100,10 @@ docs/
 `StartupConsoleLogger` 是呼叫端擁有的 `ILogger`，只在註冊期間傳給用戶端。它為每個用戶端生命週期事件向標準錯誤寫入一筆以換行分隔的 JSON 記錄。每筆記錄都有 `"source":"demo-central-config"`，並且恰好使用下列其中一組屬性（JSON 屬性順序不屬於契約）：
 
 - `loaded`：`source`、`event`、`valueCount`、`missingFallbackKeyCount`、`attemptCount`、`elapsedMs`；
-- `retry`：`source`、`event`、`attemptCount`、`failureKind`、可為 null 的 `httpStatusCode`、`delayMs`；以及
+- `retry`：`source`、`event`、`attemptCount`、`failureKind`、可為 null 的 `httpStatusCode`、`delayMs`、可為 null 的 `centralErrorCode` 與 `centralTraceId`；以及
 - `failed`：`source`、`event`、`failureKind`、`attemptCount`、可為 null 的 `httpStatusCode`、`elapsedMs`、`missingRequiredKeys`、可為 null 的 `centralErrorCode` 與 `centralTraceId`。
 
-`missingRequiredKeys` 只在 `failureKind` 為 `MissingRequiredKeys` 時列出缺少的中央必要設定鍵名稱，其他情況為空陣列；這與用戶端契約允許在最終 Error 日誌公開這些名稱的規則一致，讓示範者不必除錯就能看出缺少哪個設定鍵。`centralErrorCode` 與 `centralTraceId` 來自用戶端驗證過的中央 Problem Details，讓維護人員能以 `traceId` 找到中央主機日誌中的對應記錄。記錄器排除中央環境、其他要求的設定鍵、缺少的允許後備設定鍵名稱、設定值、經格式化的架構訊息及例外序列化。這個由示範主機擁有的穩定協定，讓操作手冊與 E2E 同步不依賴架構 Console Logger 的裝飾格式。
+`missingRequiredKeys` 只在 `failureKind` 為 `MissingRequiredKeys` 時列出缺少的中央必要設定鍵名稱，其他情況為空陣列；這與用戶端契約允許在最終 Error 日誌公開這些名稱的規則一致，讓示範者不必除錯就能看出缺少哪個設定鍵。`centralErrorCode` 與 `centralTraceId` 來自用戶端驗證過的中央 Problem Details，讓維護人員能以 `traceId` 找到中央主機日誌中的對應記錄；`retry` 的值取自觸發該次重試的回應，`failed` 的值取自最終回應。記錄器排除中央環境、其他要求的設定鍵、缺少的允許後備設定鍵名稱、設定值、經格式化的架構訊息及例外序列化。這個由示範主機擁有的穩定協定，讓操作手冊與 E2E 同步不依賴架構 Console Logger 的裝飾格式。
 
 E2E 的 `ChildProcess` 模組封裝程序建立、非同步讀取完所有輸出、等待就緒狀態、提早結束診斷、程序樹終止及等待程序結束。`PocProcessEnvironment` 組合此模組，形成先中央、後示範的工作流程。測試方法使用 HTTP 與生命週期操作，不直接操作 `Process`。
 

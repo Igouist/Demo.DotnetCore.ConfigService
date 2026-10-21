@@ -101,7 +101,9 @@ internal sealed class StartupConsoleLogger : ILogger
                 if (!TryReadInt32(fields, "AttemptCount", out int warningAttemptCount)
                     || !TryReadText(fields, "FailureKind", out string warningFailureKind)
                     || !TryReadNullableInt32(fields, "HttpStatusCode", out int? warningHttpStatusCode)
-                    || !TryReadDouble(fields, "DelayMs", out double delayMs))
+                    || !TryReadDouble(fields, "DelayMs", out double delayMs)
+                    || !TryReadNullableText(fields, "CentralErrorCode", out string? warningCentralErrorCode)
+                    || !TryReadNullableText(fields, "CentralTraceId", out string? warningCentralTraceId))
                 {
                     return false;
                 }
@@ -113,7 +115,9 @@ internal sealed class StartupConsoleLogger : ILogger
                     attemptCount = warningAttemptCount,
                     failureKind = warningFailureKind,
                     httpStatusCode = warningHttpStatusCode,
-                    delayMs
+                    delayMs,
+                    centralErrorCode = warningCentralErrorCode,
+                    centralTraceId = warningCentralTraceId
                 };
                 return true;
             case LogLevel.Error:

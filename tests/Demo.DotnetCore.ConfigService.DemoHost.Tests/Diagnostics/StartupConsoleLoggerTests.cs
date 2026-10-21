@@ -26,6 +26,18 @@ public sealed class StartupConsoleLoggerTests
             ("FailureKind", "TransportFailure"),
             ("HttpStatusCode", null),
             ("DelayMs", 1000d),
+            ("CentralErrorCode", null),
+            ("CentralTraceId", null),
+            ("Environment", "never-serialize"));
+        Emit(
+            logger,
+            LogLevel.Warning,
+            ("AttemptCount", 2),
+            ("FailureKind", "HttpFailure"),
+            ("HttpStatusCode", 500),
+            ("DelayMs", 2000d),
+            ("CentralErrorCode", "persistence_failure"),
+            ("CentralTraceId", "0HN1RETRY:00000002"),
             ("Environment", "never-serialize"));
         Emit(
             logger,
@@ -39,7 +51,7 @@ public sealed class StartupConsoleLoggerTests
             ("Environment", "never-serialize"));
 
         string[] lines = output.ToString().Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
-        Assert.Equal(3, lines.Length);
+        Assert.Equal(4, lines.Length);
         AssertMarker(
             lines[0],
             "loaded",
@@ -47,13 +59,26 @@ public sealed class StartupConsoleLoggerTests
         AssertMarker(
             lines[1],
             "retry",
-            "source", "event", "attemptCount", "failureKind", "httpStatusCode", "delayMs");
+            "source", "event", "attemptCount", "failureKind", "httpStatusCode", "delayMs",
+            "centralErrorCode", "centralTraceId");
         AssertMarker(
             lines[2],
+            "retry",
+            "source", "event", "attemptCount", "failureKind", "httpStatusCode", "delayMs",
+            "centralErrorCode", "centralTraceId");
+        using JsonDocument retryWithoutProblem = JsonDocument.Parse(lines[1]);
+        Assert.Equal(JsonValueKind.Null, retryWithoutProblem.RootElement.GetProperty("centralErrorCode").ValueKind);
+        Assert.Equal(JsonValueKind.Null, retryWithoutProblem.RootElement.GetProperty("centralTraceId").ValueKind);
+        using JsonDocument retryWithProblem = JsonDocument.Parse(lines[2]);
+        Assert.Equal(500, retryWithProblem.RootElement.GetProperty("httpStatusCode").GetInt32());
+        Assert.Equal("persistence_failure", retryWithProblem.RootElement.GetProperty("centralErrorCode").GetString());
+        Assert.Equal("0HN1RETRY:00000002", retryWithProblem.RootElement.GetProperty("centralTraceId").GetString());
+        AssertMarker(
+            lines[3],
             "failed",
             "source", "event", "failureKind", "attemptCount", "httpStatusCode", "elapsedMs", "missingRequiredKeys",
             "centralErrorCode", "centralTraceId");
-        using JsonDocument failed = JsonDocument.Parse(lines[2]);
+        using JsonDocument failed = JsonDocument.Parse(lines[3]);
         Assert.Equal(
             ["Demo:RequiredMessage"],
             failed.RootElement.GetProperty("missingRequiredKeys").EnumerateArray().Select(key => key.GetString()));
