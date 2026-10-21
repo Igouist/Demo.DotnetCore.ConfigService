@@ -50,9 +50,9 @@ internal sealed class CentralExceptionMiddleware
             {
                 throw;
             }
-            catch (Exception)
+            catch (Exception writerException)
             {
-                LogProblemDetailsWriterFailure(httpContext);
+                LogProblemDetailsWriterFailure(httpContext, writerException);
                 httpContext.Abort();
             }
         }
@@ -79,10 +79,10 @@ internal sealed class CentralExceptionMiddleware
         if (exception is PersistenceFailureException persistenceFailure)
         {
             _logger.LogError(
-                "Central Host persistence failure. TraceIdentifier: {TraceIdentifier}; PersistenceFailureCategory: {PersistenceFailureCategory}; Diagnostics: {Diagnostics}",
+                exception,
+                "Central Host persistence failure. TraceIdentifier: {TraceIdentifier}; PersistenceFailureCategory: {PersistenceFailureCategory}",
                 CentralProblemDetailsWriter.GetTraceIdentifier(httpContext),
-                persistenceFailure.Category,
-                SafeExceptionDiagnostics.Describe(exception));
+                persistenceFailure.Category);
         }
         else if (exception is not (RequestValidationException
             or ConfigurationEntryNotFoundException
@@ -90,10 +90,9 @@ internal sealed class CentralExceptionMiddleware
             or PersistenceBusyException))
         {
             _logger.LogError(
-                "Central Host unexpected failure. TraceIdentifier: {TraceIdentifier}; Diagnostics: {Diagnostics}; StackTrace: {StackTrace}",
-                CentralProblemDetailsWriter.GetTraceIdentifier(httpContext),
-                SafeExceptionDiagnostics.Describe(exception),
-                SafeExceptionDiagnostics.InnermostStackTrace(exception));
+                exception,
+                "Central Host unexpected failure. TraceIdentifier: {TraceIdentifier}",
+                CentralProblemDetailsWriter.GetTraceIdentifier(httpContext));
         }
     }
 
@@ -102,22 +101,22 @@ internal sealed class CentralExceptionMiddleware
         if (exception is PersistenceFailureException persistenceFailure)
         {
             _logger.LogError(
-                "Central Host failure after the response started. TraceIdentifier: {TraceIdentifier}; PersistenceFailureCategory: {PersistenceFailureCategory}; Diagnostics: {Diagnostics}",
+                exception,
+                "Central Host failure after the response started. TraceIdentifier: {TraceIdentifier}; PersistenceFailureCategory: {PersistenceFailureCategory}",
                 CentralProblemDetailsWriter.GetTraceIdentifier(httpContext),
-                persistenceFailure.Category,
-                SafeExceptionDiagnostics.Describe(exception));
+                persistenceFailure.Category);
             return;
         }
 
         _logger.LogError(
-            "Central Host failure after the response started. TraceIdentifier: {TraceIdentifier}; Diagnostics: {Diagnostics}; StackTrace: {StackTrace}",
-            CentralProblemDetailsWriter.GetTraceIdentifier(httpContext),
-            SafeExceptionDiagnostics.Describe(exception),
-            SafeExceptionDiagnostics.InnermostStackTrace(exception));
+            exception,
+            "Central Host failure after the response started. TraceIdentifier: {TraceIdentifier}",
+            CentralProblemDetailsWriter.GetTraceIdentifier(httpContext));
     }
 
-    private void LogProblemDetailsWriterFailure(HttpContext httpContext) =>
+    private void LogProblemDetailsWriterFailure(HttpContext httpContext, Exception writerException) =>
         _logger.LogError(
+            writerException,
             "Central Host Problem Details writer failure. TraceIdentifier: {TraceIdentifier}",
             CentralProblemDetailsWriter.GetTraceIdentifier(httpContext));
 }

@@ -27,7 +27,7 @@ public sealed class SqliteReadinessHealthCheckTests
     }
 
     [Fact]
-    public async Task CheckHealthAsync_returns_unhealthy_with_only_safe_diagnostics()
+    public async Task CheckHealthAsync_returns_unhealthy_with_the_exception_for_the_health_log()
     {
         await using var directory = TemporaryDirectory.Create();
         string databasePath = Path.Combine(directory.Path, "central-config-secret.db");
@@ -45,8 +45,8 @@ public sealed class SqliteReadinessHealthCheckTests
             CancellationToken.None);
 
         Assert.Equal(HealthStatus.Unhealthy, result.Status);
-        Assert.Equal("IncompatibleDatabaseException", result.Description);
-        Assert.Null(result.Exception);
+        Assert.Null(result.Description);
+        Assert.NotNull(result.Exception);
         Assert.Empty(result.Data);
     }
 
