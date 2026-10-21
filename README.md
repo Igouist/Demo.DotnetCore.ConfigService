@@ -15,9 +15,9 @@ Config Distribution POC 使用 .NET 8 驗證集中式設定發佈。Central Conf
 
 - **Central Config Host**：提供 Management、Distribution 與一個 Operational readiness HTTP interface。SQLite 在 POC 資料庫的生命週期內保留完整版本歷史。
 - **Client package**：在 Consumer Application 啟動時載入中央設定，並建立不可變的設定快照。
-- **Demo Consumer Host**：使用 Client public API，並顯示所有設定來源合併後的有效設定。一般 solution build 使用 `ProjectReference`。Packaged E2E tests 與示範手冊使用實際封裝的 Client。
+- **Demo Consumer Host**：使用 Client public API，並顯示所有設定來源合併後的有效設定。一般 solution build 使用 `ProjectReference`。Packaged E2E tests 使用實際封裝的 Client。
 
-初始 POC 已完成 Central Host、Client package、Demo Host、跨程序 E2E Scenarios A～J 與人工示範手冊。本文件說明如何理解、驗證及示範目前的 POC。
+初始 POC 已完成 Central Host、Client package、Demo Host、跨程序 E2E Scenarios A～J 與逐步 HTTP 演示。本文件說明如何理解、驗證及示範目前的 POC。
 
 ## 目標與邊界
 
@@ -112,7 +112,7 @@ Demo.DotnetCore.ConfigService.sln
 ### 必要工具
 
 - 安裝 Git，以執行版本控制與 whitespace 檢查。
-- 安裝 PowerShell，以執行人工示範手冊。
+- 安裝 Windows PowerShell 5.1 或 PowerShell 7，以執行 HTTP 演示的啟動腳本。
 - 安裝任一 .NET SDK 10.0.x（[`global.json`](global.json) 要求 10.0.100 以上的 10.0 版本；SDK 8 的編譯器與格式檢查不相容），以及 .NET 8 ASP.NET Core 執行階段。所有 source 與 test projects 都以 `net8.0` 為目標。
 - 從包含 `Demo.DotnetCore.ConfigService.sln` 的 repository root 執行下列命令。
 
@@ -138,21 +138,9 @@ git diff --check
 pwsh ./scripts/start-http-demo.ps1
 ```
 
-腳本建置方案、以新的暫存資料庫啟動 Central，等你在 `.http` 寫入第一版中央值後啟動兩個 Demo，之後在同一個視窗輸入 `A`、`B` 或 `R` 重啟 Demo，輸入 `Q` 或按 `Ctrl+C` 停止全部程序並清理暫存資料。支援 Windows PowerShell 5.1 與 PowerShell 7；Windows PowerShell 的執行方式、指令選單與不使用腳本的手動流程見操作說明。
+腳本建置方案、以新的暫存資料庫啟動 Central，等你在 `.http` 寫入第一版中央值後啟動兩個 Demo，之後在同一個視窗輸入 `A`、`B` 或 `R` 重啟 Demo，輸入 `Q` 或按 `Ctrl+C` 停止全部程序並清理暫存資料。支援 Windows PowerShell 5.1 與 PowerShell 7；Windows PowerShell 的執行方式、指令選單、選用的設定來源優先序展示，以及不使用腳本的手動流程見操作說明。
 
-這個短演示使用 `ProjectReference` 連結 Client，不取代 packaged E2E tests 或下列完整示範。
-
-## 執行完整示範
-
-[POC 示範手冊](docs/demo/config-distribution-poc-runbook.md) 提供可重現的完整程序：
-
-- 建置並封裝 Client package。
-- 使用隔離的 package cache 還原並建置 Demo Host。
-- 啟動 Central Host 與 Demo Host，並建立非敏感的示範資料。
-- 驗證啟動快照、設定來源優先序、版本歷史與不分大小寫的識別規則。
-- 停止手冊啟動的子程序，並清理本次產生的 artifacts。
-
-執行手冊前，先閱讀其中的安全注意事項。手冊會呼叫未受身分驗證保護的端點，也包含可能公開程序設定的 `unsafe-root` 示範。只在隔離環境使用非敏感資料。
+這個短演示使用 `ProjectReference` 連結 Client。使用實際封裝 Client 的完整情境由 `EndToEnd.Tests` 自動驗證；在自己的專案引用套件的方式見 [Client 使用說明](src/Demo.DotnetCore.ConfigService.Client/README.md#引用套件)。
 
 ## 使用 Client package
 
@@ -208,7 +196,7 @@ Readiness tests 驗證固定的 `200 ready`／`503 unavailable` contract、launc
 | 理解決策原因 | [POC Decision Log](docs/decisions/poc-decision-log.md) 保存替代方案、理由與修訂歷史。[ADR-0001](docs/adr/0001-share-value-by-environment-and-key.md) 與 [ADR-0002](docs/adr/0002-consumer-owned-key-selection.md) 記錄核心原則。 |
 | 修改 Client public API 或設定 | `Client`、`Client.Tests` 與 [Client 使用說明](src/Demo.DotnetCore.ConfigService.Client/README.md)。 |
 | 修改 Demo 或跨程序行為 | `DemoHost`、`DemoHost.Tests`、`EndToEnd.Tests` 與 [Demo/E2E 規格](docs/design/demo-host-e2e.md)。 |
-| 執行人工示範 | [POC 示範手冊](docs/demo/config-distribution-poc-runbook.md) 說明 packaged Client、實際程序與安全清理。 |
+| 向團隊示範 | [HTTP 演示操作說明](docs/demo/http-demo-guide.md) 與啟動腳本 [`scripts/start-http-demo.ps1`](scripts/start-http-demo.ps1)。 |
 | 研究技術背景 | [`docs/knowledge/`](docs/knowledge/README.md) 收錄 .NET configuration、logging、HTTP limits、Framework compatibility，以及用外部 SQLite 工具查看 Central 資料庫的方式。 |
 | 理解細部設計 | [`docs/design/`](docs/design/) 保存整合設計、Operational readiness 與 Demo/E2E 規格。 |
 

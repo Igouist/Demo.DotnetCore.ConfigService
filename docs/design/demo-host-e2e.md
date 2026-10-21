@@ -20,7 +20,7 @@
 - 實際的中央與示範程序通過分配給 E2E 的已接受情境；
 - 用戶端模組邊界上的確定性測試，持續保護精確時序與呼叫端取消語意；
 - 組件層級測試夾具擁有並清理共用的套件／建置狀態，每個情境則擁有並清理自己的程序、連接埠、SQLite 檔案與其他執行階段狀態；以及
-- 工程師可依一份以 PowerShell 為主要操作方式的手冊，安全地重現 POC。
+- 工程師可依一份以 PowerShell 為主要操作方式的手冊，安全地重現 POC（此手冊已依 POC-060 移除，見第 10 節）。
 
 ## 2. 範圍與已確定的選擇
 
@@ -29,7 +29,7 @@
 1. `Demo.DotnetCore.ConfigService.DemoHost`：一般 ASP.NET Core Web API。
 2. `Demo.DotnetCore.ConfigService.DemoHost.Tests`：聚焦於端點與設定慣例的測試。
 3. `Demo.DotnetCore.ConfigService.EndToEnd.Tests`：實際程序的測試框架與情境。
-4. `docs/demo/config-distribution-poc-runbook.md`：與實際成品一致的示範程序。
+4. `docs/demo/config-distribution-poc-runbook.md`：與實際成品一致的示範程序（已依 POC-060 移除，見第 10 節）。
 
 本設計採用兩項實作選擇：
 
@@ -86,9 +86,6 @@ tests/
       ManagementClient.cs
       ManagementContracts.cs
 
-docs/
-  demo/
-    config-distribution-poc-runbook.md
 ```
 
 名稱仍屬實作細節，找到更清楚的區域邊界時可再調整；但本規格的責任與相依方向已確定。
@@ -103,7 +100,7 @@ docs/
 - `retry`：`source`、`event`、`attemptCount`、`failureKind`、可為 null 的 `httpStatusCode`、`delayMs`、可為 null 的 `centralErrorCode` 與 `centralTraceId`；以及
 - `failed`：`source`、`event`、`failureKind`、`attemptCount`、可為 null 的 `httpStatusCode`、`elapsedMs`、`missingRequiredKeys`、可為 null 的 `centralErrorCode` 與 `centralTraceId`。
 
-`missingRequiredKeys` 只在 `failureKind` 為 `MissingRequiredKeys` 時列出缺少的中央必要設定鍵名稱，其他情況為空陣列；這與用戶端契約允許在最終 Error 日誌公開這些名稱的規則一致，讓示範者不必除錯就能看出缺少哪個設定鍵。`centralErrorCode` 與 `centralTraceId` 來自用戶端驗證過的中央 Problem Details，讓維護人員能以 `traceId` 找到中央主機日誌中的對應記錄；`retry` 的值取自觸發該次重試的回應，`failed` 的值取自最終回應。記錄器排除中央環境、其他要求的設定鍵、缺少的允許後備設定鍵名稱、設定值、經格式化的架構訊息及例外序列化。這個由示範主機擁有的穩定協定，讓操作手冊與 E2E 同步不依賴架構 Console Logger 的裝飾格式。
+`missingRequiredKeys` 只在 `failureKind` 為 `MissingRequiredKeys` 時列出缺少的中央必要設定鍵名稱，其他情況為空陣列；這與用戶端契約允許在最終 Error 日誌公開這些名稱的規則一致，讓示範者不必除錯就能看出缺少哪個設定鍵。`centralErrorCode` 與 `centralTraceId` 來自用戶端驗證過的中央 Problem Details，讓維護人員能以 `traceId` 找到中央主機日誌中的對應記錄；`retry` 的值取自觸發該次重試的回應，`failed` 的值取自最終回應。記錄器排除中央環境、其他要求的設定鍵、缺少的允許後備設定鍵名稱、設定值、經格式化的架構訊息及例外序列化。這個由示範主機擁有的穩定協定，讓 HTTP 演示的啟動腳本與 E2E 都不依賴架構 Console Logger 的裝飾格式。
 
 E2E 的 `ChildProcess` 模組封裝程序建立、非同步讀取完所有輸出、等待就緒狀態、提早結束診斷、程序樹終止及等待程序結束。`PocProcessEnvironment` 組合此模組，形成先中央、後示範的工作流程。測試方法使用 HTTP 與生命週期操作，不直接操作 `Process`。
 
@@ -123,7 +120,7 @@ WebApplication.CreateBuilder(args)
 
 示範主機在註冊前建立 `StartupConsoleLogger`，直接使用 `Console.Error` 作為輸出，並擁有其生命週期；用戶端不建立也不處置它。記錄器在整個 `RunAsync` 期間持續可用，不擁有架構的記錄提供者，也不需要暫時的服務提供者，或 Web SDK 共用架構之外的額外套件。聚焦測試涵蓋其標記對應及精確的 JSON 屬性允許清單。示範主機不攔截並重新解讀 `CentralConfigLoadException`，也不把啟動失敗轉成仍在執行的 HTTP 應用程式。
 
-納入版本控制的基底 `appsettings.json` 包含兩個設定鍵選擇陣列及不敏感的本機範例。它以明確停用模式作為安全的獨立啟動預設值；操作手冊與 E2E 程序環境會明確啟用中央載入：
+納入版本控制的基底 `appsettings.json` 包含兩個設定鍵選擇陣列及不敏感的本機範例。它以明確停用模式作為安全的獨立啟動預設值；HTTP 演示與 E2E 程序環境會明確啟用中央載入：
 
 ```json
 {
@@ -145,7 +142,7 @@ WebApplication.CreateBuilder(args)
 }
 ```
 
-預設停用讓聚焦的示範 HTTP 測試與意外的獨立啟動，不依賴中央設定主機是否可用。這不是隱含的啟用狀態：`Enabled` 仍須明確存在且為 Boolean。與實際成品一致的操作手冊，一律展示開啟中央載入所需的明確覆寫。
+預設停用讓聚焦的示範 HTTP 測試與意外的獨立啟動，不依賴中央設定主機是否可用。這不是隱含的啟用狀態：`Enabled` 仍須明確存在且為 Boolean。HTTP 演示的啟動命令一律展示開啟中央載入所需的明確覆寫。
 
 只有基底 `appsettings.json` 宣告 `CentralRequiredKeys` 與 `FallbackAllowedKeys`。環境專用 JSON、環境變數及命令列引數可覆寫 `Enabled`、`BaseAddress`、`Environment` 及一般的 `Demo:*` 值，但不重新宣告或擴充這兩個陣列。慣例測試會解析納入版本控制的檔案，保護這個受支援的範例；它不宣稱用戶端能對任意使用端強制驗證設定來源。
 
@@ -205,7 +202,7 @@ WebApplication.CreateBuilder(args)
 - 預設模式：以 `ProjectReference` 參考用戶端專案；
 - 套件模式：以 `PackageReference` 參考 `Demo.DotnetCore.ConfigService.Client`，並設定 `VersionOverride="$(DemoClientPackageVersion)"`。
 
-兩個參考互斥。集中管理的 `0.1.0` `PackageVersion` 滿足 NuGet Central Package Management 的相符項目要求；接著 `VersionOverride` 選取操作手冊使用的確切成品或 E2E 的唯一成品，無須改寫集中管理檔案。套件模式若缺少 `DemoClientPackageVersion`，還原與建置會以清楚的 MSBuild 錯誤失敗，且此模式要求 Central Package Version Override 支援維持啟用。還原與建置必須傳入完全相同的兩個屬性。它們是建置／測試機制，不是執行階段設定或公開的應用程式選項。
+兩個參考互斥。集中管理的 `0.1.0` `PackageVersion` 滿足 NuGet Central Package Management 的相符項目要求；接著 `VersionOverride` 選取 E2E 的唯一成品，無須改寫集中管理檔案。套件模式若缺少 `DemoClientPackageVersion`，還原與建置會以清楚的 MSBuild 錯誤失敗，且此模式要求 Central Package Version Override 支援維持啟用。還原與建置必須傳入完全相同的兩個屬性。它們是建置／測試機制，不是執行階段設定或公開的應用程式選項。
 
 每次執行 E2E 測試組件時，`PackagedDemoFixture` 會：
 
@@ -297,22 +294,12 @@ WebApplication.CreateBuilder(args)
 
 ## 10. 示範操作手冊
 
-`docs/demo/config-distribution-poc-runbook.md` 以 PowerShell 為主要操作方式，且與實際成品一致。主要操作流程如下：
+本節原本規定 `docs/demo/config-distribution-poc-runbook.md`：一份與實際成品一致、以 PowerShell 為主要操作方式的完整示範程序，並且不新增一鍵協調指令碼。兩項規定都已修訂：
 
-1. 驗證固定版本的 SDK，並以 Release 還原／建置；
-2. 將用戶端 `0.1.0` 封裝至已忽略的 `artifacts/demo/feed`；
-3. 建立已忽略、本次示範專用的 NuGet 設定／快取／輸出根目錄，再還原及建置示範主機，且兩個命令都傳入相同的 `UsePackagedClient=true` 與 `DemoClientPackageVersion=0.1.0`；
-4. 使用 SQLite 絕對路徑，在範例 URL `http://127.0.0.1:5180` 啟動中央設定主機；
-5. 透過管理 HTTP 建立不敏感的必要／後備／歷程值；
-6. 明確啟用中央載入，在範例 URL `http://127.0.0.1:5181` 啟動套件模式的示範主機；
-7. 展示範圍限定值、後備、空字串、大小寫識別語意、優先順序、歷程／還原及啟動快照行為；
-8. 示範主機持續執行時變更中央設定，再重新啟動示範主機以顯示新快照；
-9. 只將不安全根層級呼叫列為選用步驟，並加上醒目警告；以及
-10. 先停止兩個程序，再移除資料庫、WAL/SHM、套件來源、快取與輸出。
+- POC-059 新增 HTTP 演示的一鍵啟動腳本 `scripts/start-http-demo.ps1`，向團隊示範改以 [HTTP 演示操作說明](../demo/http-demo-guide.md)為準。
+- POC-060 移除示範操作手冊。它驗證的套件模式、範圍限定值、後備、空字串、大小寫識別、優先順序、歷程／還原、啟動快照與不安全根層級介面，均由第 8 節的 E2E 情境自動驗證；設定來源優先序的人工展示移到 HTTP 演示的選用段落，使用端引用套件的方式移到 [Client 使用說明](../../src/Demo.DotnetCore.ConfigService.Client/README.md)。
 
-操作手冊採用與 E2E 相同的確切 ID／萬用字元套件來源對應，並使用各自獨立的套件、中繼及輸出絕對路徑，讓套件模式無法重用預設專案參考的資產。它說明如何替換已被占用的範例連接埠，並透過 `--urls` 傳入兩個繫結。在可行時使用具名的 PowerShell 變數，避免修改整個環境；絕不使用真實連線字串或認證資料，也不宣稱不安全介面適用於隔離示範之外的用途。
-
-不新增獨立的一鍵協調指令碼。自動化生命週期的所有權屬於 E2E 測試框架；操作手冊仍提供每個操作人員步驟的可讀證據。
+自動化生命週期的所有權仍屬於 E2E 測試框架。
 
 ## 11. 錯誤處理與診斷
 

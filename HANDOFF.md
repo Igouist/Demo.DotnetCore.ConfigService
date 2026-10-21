@@ -22,9 +22,9 @@
 | Client | 啟動設定與設定鍵選擇驗證、HTTP 分發、有限重試與逾時、啟動診斷（最終失敗帶出中央的 `CentralErrorCode` 與 `CentralTraceId`），以及不重新載入的啟動快照設定提供者。 |
 | Demo Consumer Host | 在啟動時載入中央設定；提供 `Demo` 區段的有效設定，以及明確標示為不安全的根設定診斷端點。 |
 | 測試 | 單元、站內整合／HTTP、套件契約、確定性重試／取消測試，以及使用真正 Central／Demo 程序與 packaged Client 的 E2E 情境 A–J。 |
-| 文件與演示 | README、設計與決策文件、短入門導讀、完整示範手冊，以及 17 段請求的 `.http` 演示與操作說明；HTTP 演示可用 `scripts/start-http-demo.ps1` 一個指令啟動三個程序。 |
+| 文件與演示 | README、設計與決策文件、短入門導讀，以及 17 段請求的 `.http` 演示與操作說明；HTTP 演示可用 `scripts/start-http-demo.ps1` 一個指令啟動三個程序。 |
 
-目前跨程序 E2E 使用一個 Central 與一個 Demo。HTTP 演示使用一個 Central 與兩個 Demo，展示兩個使用端共用同一份中央值，以及必要設定鍵缺值時的啟動失敗；它以 `ProjectReference` 連結 Client，由人員逐段呼叫，並在標示的步驟以啟動腳本的指令重啟 Demo，不取代使用真正 NuGet 套件的 E2E 或完整示範手冊。
+目前跨程序 E2E 使用一個 Central 與一個 Demo。HTTP 演示使用一個 Central 與兩個 Demo，展示兩個使用端共用同一份中央值，以及必要設定鍵缺值時的啟動失敗；它以 `ProjectReference` 連結 Client，由人員逐段呼叫，並在標示的步驟以啟動腳本的指令重啟 Demo，不取代使用真正 NuGet 套件的 E2E。原本的完整示範手冊已移除（見下方 #16）。
 
 ### 最近完成的工作
 
@@ -56,10 +56,15 @@
 - [#4](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/4)：新增 `GET /api/v1/management/configurations?environment=...`，列出中央環境每個設定鍵的顯示拼寫、最新版本、目前狀態與時間；不回傳值、包含已移除的鍵、不分頁，空環境回傳空陣列。契約見設計文件 §4.5（原 §4.5、§4.6 改為 §4.6、§4.7），取捨見決策紀錄 POC-058。`.http` 在 17 之後加一段附錄請求，01–17 的編號與預期結果不變。
 - 驗證（Linux、SDK 10.0.113）：README「完整驗證」全部通過，format 無變更、Release build 0 warning；CentralHost.Tests 192、Client.Tests 189、DemoHost.Tests 12、EndToEnd.Tests 130。另以真正的 Central 程序實測列表、空環境與缺少 `environment` 的 `400`。
 
-### 進行中的變更（分支 `claude/project-thread-uoatc2`，尚未合併）
+### PR #15（已合併，合併提交 `d75b78d`）
 
 - [#11](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/11)：新增 [`scripts/start-http-demo.ps1`](scripts/start-http-demo.ps1)，一個指令建置並啟動 Central 與兩個 Demo；使用者完成 `.http` 02 後按 Enter 才啟動 Demo，之後輸入 `A`／`B`／`R` 重啟 Demo，`Q` 或 `Ctrl+C` 停止全部並刪除暫存目錄（`-KeepData` 保留）。腳本不寫入設定值，01–17 的預期結果不變。方案比較見決策紀錄 POC-059；[HTTP 操作說明](docs/demo/http-demo-guide.md)改寫為腳本流程，手動流程移到附錄；README 同步。`.editorconfig` 規定 `.ps1` 存成含 BOM 的 UTF-8，供 Windows PowerShell 5.1 正確讀取中文。
 - 驗證（Linux、PowerShell 7.6、SDK 10.0.113）：以 tmux 執行腳本，`.http` 01–17 與附錄以 httpyac 逐段送出，狀態碼與關鍵欄位均符合預期；第 15 步輸入 `A` 後腳本顯示 `"missingRequiredKeys":["Demo:CentralRequiredMessage"]` 與結束代碼 134。另測 `Q` 與 `Ctrl+C`（在 Enter 提示與指令選單）都會停止三個程序並刪除暫存目錄、連接埠已被使用與 `Demo__` 環境變數時拒絕啟動、暫存路徑含空白。尚未在 Windows 或 Windows PowerShell 5.1 上執行。
+
+### 進行中的變更（分支 `claude/project-thread-uoatc2`，尚未合併）
+
+- [#16](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/16)：移除完整示範手冊，理由見決策紀錄 POC-060。它獨有的兩項內容移到新位置：設定來源優先序的人工展示成為 [HTTP 操作說明](docs/demo/http-demo-guide.md)第 5 節（選用，另啟動 Demo C 於 `5183`，`.http` 新增附錄 B；原附錄改名附錄 A），使用端引用套件的方式寫進 [Client 使用說明](src/Demo.DotnetCore.ConfigService.Client/README.md)的「引用套件」。README、短入門導讀與 Demo／E2E 規格第 10 節同步修訂。
+- 驗證（Linux、PowerShell 7.6、SDK 10.0.113）：以啟動腳本執行 Central，照第 5 節的指令在另一個終端機啟動 Demo C，有效設定依序為 `environment-value`、`command-value`，中央值不變，移除環境變數後 `Test-Path` 為 `False`。照「引用套件」的步驟在儲存庫外封裝並建立一個 `net8.0` 使用端，還原、建置並連到 Central，取得中央值。README「完整驗證」全部通過：format 無變更、Release build 0 warning；CentralHost.Tests 192、Client.Tests 189、DemoHost.Tests 12、EndToEnd.Tests 130。
 
 ### 下一步
 
@@ -90,7 +95,7 @@ POC 僅在隔離環境使用非敏感資料。根設定診斷端點會公開未�
 | 修改 Client 或就緒探針 | [Client 使用說明](src/Demo.DotnetCore.ConfigService.Client/README.md)、[Central readiness 設計](docs/design/central-readiness.md)。 |
 | 修改 Demo 或跨程序測試 | [Demo／E2E 設計](docs/design/demo-host-e2e.md)。 |
 | 向團隊逐步演示 | [HTTP 操作說明](docs/demo/http-demo-guide.md)、[HTTP 呼叫檔](docs/demo/config-distribution-demo.http)。 |
-| 驗證 NuGet 封裝與完整演示 | [完整示範手冊](docs/demo/config-distribution-poc-runbook.md)。 |
+| 在使用端引用 NuGet 套件 | [Client 使用說明](src/Demo.DotnetCore.ConfigService.Client/README.md)的「引用套件」；套件模式的完整驗證由 E2E 負責。 |
 
 從專案根目錄，依 README 的「完整驗證」執行 restore、format、Release build 與 tests；SDK 版本以 [global.json](global.json) 為準。修改行為時，先選最小且穩定的測試邊界；跨程序整合行為再由 E2E 補強。
 
