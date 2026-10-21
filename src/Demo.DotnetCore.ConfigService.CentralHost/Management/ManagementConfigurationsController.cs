@@ -13,6 +13,8 @@ public sealed class ManagementControllerDependencies
 
     internal IValidator<ConfigurationIdentityQuery> QueryValidator { get; }
 
+    internal IValidator<EnvironmentQuery> EnvironmentQueryValidator { get; }
+
     internal ManagementModule Module { get; }
 
     internal ManagementControllerDependencies(
@@ -20,12 +22,14 @@ public sealed class ManagementControllerDependencies
         IValidator<SetConfigurationRequest> setValidator,
         IValidator<RemoveConfigurationRequest> removeValidator,
         IValidator<ConfigurationIdentityQuery> queryValidator,
+        IValidator<EnvironmentQuery> environmentQueryValidator,
         ManagementModule module)
     {
         Reader = reader;
         SetValidator = setValidator;
         RemoveValidator = removeValidator;
         QueryValidator = queryValidator;
+        EnvironmentQueryValidator = environmentQueryValidator;
         Module = module;
     }
 }
@@ -86,6 +90,28 @@ public sealed class ManagementConfigurationsController : ControllerBase
                 receipt.Version,
                 receipt.State,
                 receipt.CreatedAtUtc));
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> ListAsync(
+        [FromQuery] string? environment,
+        CancellationToken cancellationToken)
+    {
+        var query = new EnvironmentQuery(environment);
+        await _dependencies.EnvironmentQueryValidator.ValidateForContractAsync(query, cancellationToken);
+
+        var entries = await _dependencies.Module.ListAsync(
+            EnvironmentName.FromValidated(query.Environment!),
+            cancellationToken);
+        var configurations = entries
+            .Select(static entry => new ConfigurationSummaryResponse(
+                entry.Key.Value,
+                entry.Version,
+                entry.State,
+                entry.CreatedAtUtc))
+            .ToArray();
+
+        return Ok(new ConfigurationListResponse(query.Environment!, configurations));
     }
 
     [HttpGet("current")]

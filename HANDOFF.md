@@ -18,7 +18,7 @@
 
 | 項目 | 現況 |
 | --- | --- |
-| Central Config Host | Management 的 Set／Remove／current／history、Distribution 的 Resolve、SQLite 持久化、`/health/ready` 與啟動識別值，以及記錄完整例外的伺服器端 Error 日誌（以 `traceId` 對應 Problem Details）。 |
+| Central Config Host | Management 的 Set／Remove／current／history 與中央環境設定鍵列表、Distribution 的 Resolve、SQLite 持久化、`/health/ready` 與啟動識別值，以及記錄完整例外的伺服器端 Error 日誌（以 `traceId` 對應 Problem Details）。 |
 | Client | 啟動設定與設定鍵選擇驗證、HTTP 分發、有限重試與逾時、啟動診斷（最終失敗帶出中央的 `CentralErrorCode` 與 `CentralTraceId`），以及不重新載入的啟動快照設定提供者。 |
 | Demo Consumer Host | 在啟動時載入中央設定；提供 `Demo` 區段的有效設定，以及明確標示為不安全的根設定診斷端點。 |
 | 測試 | 單元、站內整合／HTTP、套件契約、確定性重試／取消測試，以及使用真正 Central／Demo 程序與 packaged Client 的 E2E 情境 A–J。 |
@@ -45,11 +45,16 @@
 - [#2](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/2) 第一段（2026-10-21，對應提交 `e61066f`）：在 Linux 以 PowerShell 7.6.7 執行操作說明的全部 PowerShell 指令。指令以互動方式逐段貼入三個 tmux 終端機，使用真正的 `Ctrl+C` 停止與重啟；`.http` 的 01–17 以 httpyac 6.16.7 逐段送出（`httpyac send --line <行號>`）。每段的狀態碼與關鍵欄位均符合預期；第 15 步 Demo A 輸出 `"missingRequiredKeys":["Demo:CentralRequiredMessage"]` 後以非零代碼結束（Linux 為 134）。操作說明第 5 節補上移除暫存目錄的 PowerShell 指令。
 - 尚未在 Windows 上執行，也尚未以 Windows PowerShell 5.1 驗證。
 
-### 進行中的變更（分支 `claude/project-thread-6drc34`，尚未合併）
+### PR #10（已合併，合併提交 `78d8ef7`）
 
 - [#7](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/7)：新增[用外部 SQLite 工具查看 Central 資料庫](docs/knowledge/sqlite-external-tool-collation.md)，HTTP 操作說明加上連結。文中的查詢已在 Linux 以 SQLite 3.45.1 與 Python 3 對 Central 建立的資料庫實測。
 - [#5](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/5)：Client 的重試 Warning 加上 `CentralErrorCode`、`CentralTraceId`，Demo 的 `retry` 標記加上 `centralErrorCode`、`centralTraceId`；值取自觸發該次重試的回應；設計文件 §9.3、Demo／E2E 標記規格、示範手冊標記表與 Client README 已同步。
 - 驗證（Linux、SDK 10.0.113）：README「完整驗證」全部通過，format 無變更、Release build 0 warning；CentralHost.Tests 185、Client.Tests 189、DemoHost.Tests 12、EndToEnd.Tests 130。另以 issue #5 的情境實跑（把 `ConfigurationEntryVersions` 改名使 Central 回 `500 persistence_failure`）：Demo 的 3 筆 `retry` 與 1 筆 `failed` 各帶不同的 `centralTraceId`，每一筆都在 Central 日誌找到對應記錄。
+
+### 進行中的變更（分支 `claude/project-thread-6drc34`，尚未合併）
+
+- [#4](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/4)：新增 `GET /api/v1/management/configurations?environment=...`，列出中央環境每個設定鍵的顯示拼寫、最新版本、目前狀態與時間；不回傳值、包含已移除的鍵、不分頁，空環境回傳空陣列。契約見設計文件 §4.5（原 §4.5、§4.6 改為 §4.6、§4.7），取捨見決策紀錄 POC-058。`.http` 在 17 之後加一段附錄請求，01–17 的編號與預期結果不變。
+- 驗證（Linux、SDK 10.0.113）：README「完整驗證」全部通過，format 無變更、Release build 0 warning；CentralHost.Tests 192、Client.Tests 189、DemoHost.Tests 12、EndToEnd.Tests 130。另以真正的 Central 程序實測列表、空環境與缺少 `environment` 的 `400`。
 
 ### 下一步
 

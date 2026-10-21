@@ -42,6 +42,12 @@ internal sealed record ConfigurationHistory(
     ConfigurationKey Key,
     IReadOnlyList<ConfigurationVersion> Versions);
 
+internal sealed record ConfigurationEntrySummary(
+    ConfigurationKey Key,
+    long Version,
+    ConfigurationEntryState State,
+    DateTimeOffset CreatedAtUtc);
+
 internal sealed record StoredResolution(
     ConfigurationKey Key,
     ConfigurationEntryState State,

@@ -66,6 +66,36 @@ internal sealed class SqliteConfigurationEntryStore : IConfigurationEntryStore
         ORDER BY v.Version DESC;
         """;
 
+    // The LEFT JOIN keeps an entry without versions visible so the read can reject that corrupt shape.
+    private const string ListEntriesSql = """
+        WITH LatestVersions AS (
+            SELECT
+                ConfigurationEntryId,
+                Version,
+                Operation,
+                Value,
+                CreatedAtUtc,
+                ROW_NUMBER() OVER (
+                    PARTITION BY ConfigurationEntryId
+                    ORDER BY Version DESC
+                ) AS RowNumber
+            FROM ConfigurationEntryVersions
+        )
+        SELECT
+            e.Environment,
+            e.ConfigurationKey,
+            latest.Version,
+            latest.Operation,
+            latest.Value,
+            latest.CreatedAtUtc
+        FROM ConfigurationEntries AS e
+        LEFT JOIN LatestVersions AS latest
+          ON latest.ConfigurationEntryId = e.Id
+         AND latest.RowNumber = 1
+        WHERE e.Environment = @Environment
+        ORDER BY e.ConfigurationKey;
+        """;
+
     private const string EntryExistsSql = """
         SELECT EXISTS (
             SELECT 1
@@ -219,6 +249,22 @@ internal sealed class SqliteConfigurationEntryStore : IConfigurationEntryStore
                     firstIdentity.Environment,
                     firstIdentity.Key,
                     versions);
+            },
+            cancellationToken);
+
+    public Task<IReadOnlyList<ConfigurationEntrySummary>> ListEntriesAsync(
+        EnvironmentName environment,
+        CancellationToken cancellationToken) =>
+        ExecuteReadAsync<IReadOnlyList<ConfigurationEntrySummary>>(
+            async (connection, transaction) =>
+            {
+                var rows = await connection.QueryAsync<StoredEntrySummaryRow>(
+                    new CommandDefinition(
+                        ListEntriesSql,
+                        new { Environment = environment.Value },
+                        transaction,
+                        cancellationToken: cancellationToken));
+                return rows.Select(ToSummary).ToArray();
             },
             cancellationToken);
 
@@ -657,6 +703,29 @@ internal sealed class SqliteConfigurationEntryStore : IConfigurationEntryStore
             operation,
             value,
             ParseCreatedAtUtc(row.CreatedAtUtc));
+    }
+
+    private static ConfigurationEntrySummary ToSummary(StoredEntrySummaryRow row)
+    {
+        if (row.Version is not { } storedVersion)
+        {
+            throw CorruptStoredShape("A stored Configuration Entry has no versions.");
+        }
+
+        var current = ToCurrent(new StoredReadVersion
+        {
+            Environment = row.Environment,
+            ConfigurationKey = row.ConfigurationKey,
+            Version = storedVersion,
+            Operation = row.Operation,
+            Value = row.Value,
+            CreatedAtUtc = row.CreatedAtUtc
+        });
+        return new ConfigurationEntrySummary(
+            current.Key,
+            current.Version,
+            current.State,
+            current.CreatedAtUtc);
     }
 
     private static StoredResolution ToStoredResolution(StoredResolutionRow row)

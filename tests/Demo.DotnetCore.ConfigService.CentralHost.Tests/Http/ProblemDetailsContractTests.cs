@@ -20,6 +20,7 @@ public sealed class ProblemDetailsContractTests
     private const string RemovePath = "/api/v1/management/configurations/remove";
     private const string CurrentPath = "/api/v1/management/configurations/current";
     private const string HistoryPath = "/api/v1/management/configurations/history";
+    private const string ListPath = "/api/v1/management/configurations";
     private const string ResolvePath = "/api/v1/distribution/configurations/resolve";
 
     public static TheoryData<string, string, string, string> TransportInvalidSetRequests => new()
@@ -144,6 +145,29 @@ public sealed class ProblemDetailsContractTests
             [("key", "invalid_configuration_key", "Configuration Key has an invalid structure.")]);
 
         AssertDoesNotContain(problem.Body, "query-sentinel", "never-echo");
+    }
+
+    [Theory]
+    [InlineData("", "environment_required", "Environment is required.")]
+    [InlineData("?environment=", "environment_required", "Environment is required.")]
+    [InlineData("?environment=%20UAT", "environment_has_outer_whitespace", "Environment must not have leading or trailing whitespace.")]
+    public async Task Invalid_environment_list_queries_return_stable_validation_problem_details(
+        string query,
+        string expectedCode,
+        string expectedMessage)
+    {
+        await using var factory = new CentralHostWebApplicationFactory();
+        using var client = factory.CreateClient();
+
+        using var response = await client.GetAsync($"{ListPath}{query}");
+
+        await AssertProblemAsync(
+            response,
+            HttpStatusCode.BadRequest,
+            "validation_failed",
+            "One or more request fields are invalid.",
+            ListPath,
+            [("environment", expectedCode, expectedMessage)]);
     }
 
     [Theory]
@@ -726,6 +750,11 @@ public sealed class ProblemDetailsContractTests
             ConfigurationEntryIdentity identity,
             CancellationToken cancellationToken) =>
             Task.FromResult<ConfigurationHistory?>(null);
+
+        public Task<IReadOnlyList<ConfigurationEntrySummary>> ListEntriesAsync(
+            EnvironmentName environment,
+            CancellationToken cancellationToken) =>
+            Task.FromResult<IReadOnlyList<ConfigurationEntrySummary>>([]);
 
         public Task<IReadOnlyList<StoredResolution>> ResolveExistingAsync(
             EnvironmentName environment,

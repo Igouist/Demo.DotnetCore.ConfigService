@@ -35,6 +35,7 @@ public static class CentralHostServiceCollectionExtensions
         services.AddSingleton<IValidator<SetConfigurationRequest>, SetConfigurationRequestValidator>();
         services.AddSingleton<IValidator<RemoveConfigurationRequest>, RemoveConfigurationRequestValidator>();
         services.AddSingleton<IValidator<ConfigurationIdentityQuery>, ConfigurationIdentityQueryValidator>();
+        services.AddSingleton<IValidator<EnvironmentQuery>, EnvironmentQueryValidator>();
         services.AddSingleton<IValidator<ResolveConfigurationsRequest>, ResolveConfigurationsRequestValidator>();
         services.AddSingleton<StrictJsonRequestReader>();
         services.AddSingleton<CentralProblemDetailsWriter>();
@@ -45,6 +46,7 @@ public static class CentralHostServiceCollectionExtensions
             provider.GetRequiredService<IValidator<SetConfigurationRequest>>(),
             provider.GetRequiredService<IValidator<RemoveConfigurationRequest>>(),
             provider.GetRequiredService<IValidator<ConfigurationIdentityQuery>>(),
+            provider.GetRequiredService<IValidator<EnvironmentQuery>>(),
             provider.GetRequiredService<ManagementModule>()));
         services.AddSingleton(static provider => new DistributionControllerDependencies(
             provider.GetRequiredService<StrictJsonRequestReader>(),

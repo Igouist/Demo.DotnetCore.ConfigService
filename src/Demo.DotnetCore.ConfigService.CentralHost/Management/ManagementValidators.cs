@@ -63,3 +63,9 @@ internal sealed class ConfigurationIdentityQueryValidator : AbstractValidator<Co
         SetConfigurationRequestValidator.AddKeyRules(RuleFor(request => request.Key));
     }
 }
+
+internal sealed class EnvironmentQueryValidator : AbstractValidator<EnvironmentQuery>
+{
+    public EnvironmentQueryValidator() =>
+        SetConfigurationRequestValidator.AddEnvironmentRules(RuleFor(request => request.Environment));
+}
