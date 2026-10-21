@@ -26,7 +26,7 @@ await builder.AddCentralConfigAsync(startupLogger, cancellationToken);
 
 啟用中央設定時，套件負責的啟動工作從進入註冊方法起，共有保守的 30 秒總時間預算。套件的終止失敗以 `CentralConfigLoadException` 回報，並提供具型別的 `FailureKind`、`AttemptCount`、`Elapsed`、`HttpStatusCode`、`Environment` 與 `MissingRequiredKeys` 診斷資訊。若中央以 Problem Details 回應最終的 HTTP 失敗，`CentralErrorCode`（例如 `persistence_failure`）與 `CentralTraceId` 會帶出中央的錯誤代碼與追蹤識別碼；回報問題時提供 `CentralTraceId`，中央維護人員即可找到對應的伺服器日誌。呼叫端取消仍以 `OperationCanceledException` 回報，保留原始取消權杖，且不發出終止失敗的 Error 事件。
 
-選用的 Logger 接收不含設定值的結構化事件：成功插入設定提供者後發出 Information，安排重試時發出 Warning，遇到終止失敗的 `CentralConfigLoadException` 時嘗試發出一次 Error。不記錄設定值、原始回應本文、認證資料、解析器細節，或缺少中央值的允許後備設定鍵名稱。Logger 失敗會被隔離，不影響啟動結果。不提供 Logger 的多載不保證產生記錄。
+選用的 Logger 接收不含設定值的結構化事件：成功插入設定提供者後發出 Information，安排重試時發出 Warning，遇到終止失敗的 `CentralConfigLoadException` 時嘗試發出一次 Error。Warning 與 Error 都帶有 `CentralErrorCode` 與 `CentralTraceId` 欄位，值來自該次回應的 Problem Details，沒有時為 null；中央的每筆錯誤日誌因此都能對應到使用端的一筆記錄。不記錄設定值、原始回應本文、認證資料、解析器細節，或缺少中央值的允許後備設定鍵名稱。Logger 失敗會被隔離，不影響啟動結果。不提供 Logger 的多載不保證產生記錄。
 
 ## 基底 appsettings.json
 

@@ -87,6 +87,8 @@ dotnet src/Demo.DotnetCore.ConfigService.DemoHost/bin/Release/net8.0/Demo.Dotnet
 
 每段請求上方都列出預期狀態碼與關鍵欄位，請對照實際回應。`snapshot-v3` 是值的名稱，不是版本號；Remove 也會增加版本。
 
+要查看資料庫內容時，使用 **03**、**13**、**14** 的 `current` 與 `history` 查詢。用 DB Browser for SQLite 或 `sqlite3` 直接開啟資料庫時，部分查詢會顯示 `no such collation sequence: ORDINAL_IGNORE_CASE`，這不表示資料庫損壞；原因與唯讀查詢方式見[用外部 SQLite 工具查看 Central 資料庫](../knowledge/sqlite-external-tool-collation.md)。不要用外部工具寫入資料庫。
+
 若要從頭重做，先停止所有程序，再從第 2 節建立新資料庫。重複 Set 會繼續附加版本，重複 Remove 已移除的設定會回傳 `409`，不能把請求當成不會改變狀態的查詢。
 
 ## 5. 結束

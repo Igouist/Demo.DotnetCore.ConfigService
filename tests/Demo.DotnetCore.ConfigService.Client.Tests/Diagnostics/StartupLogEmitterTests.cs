@@ -33,7 +33,7 @@ public sealed class StartupLogEmitterTests
                 Assert.Same(failure, entry.Exception);
             });
         Assert.Equal("Central configuration loaded: {ValueCount} values, {MissingFallbackKeyCount} fallback-missing keys, {AttemptCount} attempt(s), {ElapsedMs} ms.", logger.Entries[0].OriginalFormat);
-        Assert.Equal("Central configuration retry scheduled after attempt {AttemptCount}: {FailureKind}; HTTP status {HttpStatusCode}; delay {DelayMs} ms.", logger.Entries[1].OriginalFormat);
+        Assert.Equal("Central configuration retry scheduled after attempt {AttemptCount}: {FailureKind}; HTTP status {HttpStatusCode}; delay {DelayMs} ms; central error code {CentralErrorCode}; central trace id {CentralTraceId}.", logger.Entries[1].OriginalFormat);
         Assert.Equal("Central configuration load failed: {FailureKind}; attempts {AttemptCount}; elapsed {ElapsedMs} ms; Environment {Environment}; missing required keys {MissingRequiredKeys}; central error code {CentralErrorCode}; central trace id {CentralTraceId}.", logger.Entries[2].OriginalFormat);
         AssertStructuredFields(
             logger.Entries[0],
@@ -46,7 +46,9 @@ public sealed class StartupLogEmitterTests
             ("AttemptCount", 1),
             ("FailureKind", CentralConfigFailureKind.TransportFailure),
             ("HttpStatusCode", null),
-            ("DelayMs", 1000d));
+            ("DelayMs", 1000d),
+            ("CentralErrorCode", null),
+            ("CentralTraceId", null));
         AssertStructuredFields(
             logger.Entries[2],
             ("FailureKind", CentralConfigFailureKind.MissingRequiredKeys),
@@ -59,6 +61,29 @@ public sealed class StartupLogEmitterTests
         IReadOnlyList<string> missingRequiredKeys = Assert.IsAssignableFrom<IReadOnlyList<string>>(
             logger.Entries[2].Fields[4].Value);
         Assert.Equal(["Demo:Required"], missingRequiredKeys);
+    }
+
+    [Fact]
+    public void Retry_warning_carries_the_validated_central_problem_reference()
+    {
+        var logger = new RecordingLogger();
+        var emitter = new StartupLogEmitter(logger);
+
+        emitter.TryWarning(
+            2,
+            CentralConfigFailureKind.HttpFailure,
+            HttpStatusCode.InternalServerError,
+            TimeSpan.FromSeconds(2),
+            new CentralProblemReference("persistence_failure", "0HN1RETRY:00000002"));
+
+        AssertStructuredFields(
+            Assert.Single(logger.Entries),
+            ("AttemptCount", 2),
+            ("FailureKind", CentralConfigFailureKind.HttpFailure),
+            ("HttpStatusCode", 500),
+            ("DelayMs", 2000d),
+            ("CentralErrorCode", "persistence_failure"),
+            ("CentralTraceId", "0HN1RETRY:00000002"));
     }
 
     [Theory]

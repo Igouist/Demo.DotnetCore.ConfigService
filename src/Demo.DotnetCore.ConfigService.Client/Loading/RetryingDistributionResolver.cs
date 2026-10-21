@@ -165,7 +165,8 @@ internal sealed class RetryingDistributionResolver
                 startedTimestamp,
                 bootstrap.Environment,
                 callerToken,
-                totalTimeoutToken);
+                totalTimeoutToken,
+                completedResponse.Problem);
         }
 
         throw Failure(
@@ -283,7 +284,8 @@ internal sealed class RetryingDistributionResolver
         long startedTimestamp,
         string environment,
         CancellationToken callerToken,
-        CancellationToken totalTimeoutToken)
+        CancellationToken totalTimeoutToken,
+        CentralProblemReference? centralProblem = null)
     {
         RetryScheduleDecision scheduleDecision;
         using (var scheduleArbiter = new RetryScheduleArbiter(
@@ -311,7 +313,7 @@ internal sealed class RetryingDistributionResolver
         try
         {
             Task scheduledDelay = Task.Delay(delay, _timeProvider, linkedDelay.Token);
-            _logEmitter.TryWarning(completedAttempt, failureKind, statusCode, delay);
+            _logEmitter.TryWarning(completedAttempt, failureKind, statusCode, delay, centralProblem);
             await scheduledDelay;
         }
         catch (OperationCanceledException)

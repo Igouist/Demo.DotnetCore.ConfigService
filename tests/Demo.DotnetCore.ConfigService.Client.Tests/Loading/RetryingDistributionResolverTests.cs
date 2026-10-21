@@ -73,6 +73,73 @@ public sealed class RetryingDistributionResolverTests
                 4_250d));
     }
 
+    [Fact]
+    public async Task Each_retry_warning_carries_the_central_problem_reference_of_its_own_attempt()
+    {
+        var time = new FakeTimeProvider();
+        var transport = new FakeDistributionTransport();
+        transport.EnqueueResponse(new DistributionHttpResponse(
+            HttpStatusCode.InternalServerError,
+            ReadOnlyMemory<byte>.Empty,
+            new CentralProblemReference("persistence_failure", "0HN1FIRST:00000001")));
+        transport.EnqueueResponse(new DistributionHttpResponse(
+            HttpStatusCode.InternalServerError,
+            ReadOnlyMemory<byte>.Empty,
+            new CentralProblemReference("internal_error", "0HN1SECOND:00000002")));
+        transport.EnqueueResponse(Response(HttpStatusCode.ServiceUnavailable));
+        transport.EnqueueResponse(ValidResponse());
+        var logger = new RecordingLogger();
+        var resolver = CreateResolver(
+            transport,
+            time,
+            new FixedRetryJitter(TimeSpan.Zero, TimeSpan.Zero, TimeSpan.Zero),
+            logger);
+        using var total = new CancellationTokenSource(TimeSpan.FromSeconds(30), time);
+
+        Task<ResolvedCentralConfig> load = resolver.ResolveAsync(
+            EnabledBootstrap(),
+            time.GetTimestamp(),
+            CancellationToken.None,
+            total.Token);
+        await transport.WaitForNextCallAsync();
+        await logger.WaitForEntryCountAsync(1);
+        time.Advance(TimeSpan.FromSeconds(1));
+        await transport.WaitForNextCallAsync();
+        await logger.WaitForEntryCountAsync(2);
+        time.Advance(TimeSpan.FromSeconds(2));
+        await transport.WaitForNextCallAsync();
+        await logger.WaitForEntryCountAsync(3);
+        time.Advance(TimeSpan.FromSeconds(4));
+        await transport.WaitForNextCallAsync();
+        ResolvedCentralConfig result = await load;
+
+        Assert.Equal(4, result.AttemptCount);
+        Assert.Collection(
+            logger.Entries.Where(entry => entry.Level == Microsoft.Extensions.Logging.LogLevel.Warning),
+            entry => AssertWarning(
+                entry,
+                1,
+                CentralConfigFailureKind.HttpFailure,
+                HttpStatusCode.InternalServerError,
+                1_000d,
+                "persistence_failure",
+                "0HN1FIRST:00000001"),
+            entry => AssertWarning(
+                entry,
+                2,
+                CentralConfigFailureKind.HttpFailure,
+                HttpStatusCode.InternalServerError,
+                2_000d,
+                "internal_error",
+                "0HN1SECOND:00000002"),
+            entry => AssertWarning(
+                entry,
+                3,
+                CentralConfigFailureKind.HttpFailure,
+                HttpStatusCode.ServiceUnavailable,
+                4_000d));
+    }
+
     [Theory]
     [InlineData(HttpStatusCode.RequestTimeout)]
     [InlineData(HttpStatusCode.TooManyRequests)]
@@ -1465,7 +1532,9 @@ public sealed class RetryingDistributionResolverTests
         int attemptCount,
         CentralConfigFailureKind failureKind,
         HttpStatusCode? httpStatusCode,
-        double delayMs)
+        double delayMs,
+        string? centralErrorCode = null,
+        string? centralTraceId = null)
     {
         Assert.Equal(Microsoft.Extensions.Logging.LogLevel.Warning, entry.Level);
         KeyValuePair<string, object?>[] fields = entry.Fields
@@ -1493,6 +1562,16 @@ public sealed class RetryingDistributionResolverTests
             {
                 Assert.Equal("DelayMs", field.Key);
                 Assert.Equal(delayMs, Assert.IsType<double>(field.Value));
+            },
+            field =>
+            {
+                Assert.Equal("CentralErrorCode", field.Key);
+                Assert.Equal(centralErrorCode, field.Value);
+            },
+            field =>
+            {
+                Assert.Equal("CentralTraceId", field.Key);
+                Assert.Equal(centralTraceId, field.Value);
             });
     }
 }

@@ -45,6 +45,12 @@
 - [#2](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/2) 第一段（2026-10-21，對應提交 `e61066f`）：在 Linux 以 PowerShell 7.6.7 執行操作說明的全部 PowerShell 指令。指令以互動方式逐段貼入三個 tmux 終端機，使用真正的 `Ctrl+C` 停止與重啟；`.http` 的 01–17 以 httpyac 6.16.7 逐段送出（`httpyac send --line <行號>`）。每段的狀態碼與關鍵欄位均符合預期；第 15 步 Demo A 輸出 `"missingRequiredKeys":["Demo:CentralRequiredMessage"]` 後以非零代碼結束（Linux 為 134）。操作說明第 5 節補上移除暫存目錄的 PowerShell 指令。
 - 尚未在 Windows 上執行，也尚未以 Windows PowerShell 5.1 驗證。
 
+### 進行中的變更（分支 `claude/project-thread-6drc34`，尚未合併）
+
+- [#7](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/7)：新增[用外部 SQLite 工具查看 Central 資料庫](docs/knowledge/sqlite-external-tool-collation.md)，HTTP 操作說明加上連結。文中的查詢已在 Linux 以 SQLite 3.45.1 與 Python 3 對 Central 建立的資料庫實測。
+- [#5](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/5)：Client 的重試 Warning 加上 `CentralErrorCode`、`CentralTraceId`，Demo 的 `retry` 標記加上 `centralErrorCode`、`centralTraceId`；值取自觸發該次重試的回應；設計文件 §9.3、Demo／E2E 標記規格、示範手冊標記表與 Client README 已同步。
+- 驗證（Linux、SDK 10.0.113）：README「完整驗證」全部通過，format 無變更、Release build 0 warning；CentralHost.Tests 185、Client.Tests 189、DemoHost.Tests 12、EndToEnd.Tests 130。另以 issue #5 的情境實跑（把 `ConfigurationEntryVersions` 改名使 Central 回 `500 persistence_failure`）：Demo 的 3 筆 `retry` 與 1 筆 `failed` 各帶不同的 `centralTraceId`，每一筆都在 Central 日誌找到對應記錄。
+
 ### 下一步
 
 1. [#2](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/2) 第二段：維護者在 Windows 上實際走一次 HTTP 演示，留意 PowerShell 版本、系統保留的連接埠範圍、示範當天使用的 `.http` 工具，以及 `Ctrl+C` 後連接埠是否釋放。
