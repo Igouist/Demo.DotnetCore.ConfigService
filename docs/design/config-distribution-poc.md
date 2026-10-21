@@ -170,6 +170,8 @@ Set 在任何先前狀態下都能成功，並附加下一個版本。所有版�
 
 管理介面與設定分發介面的路由位於 `/api/v1` 下。控制器使用 `System.Text.Json`；JSON 成員名稱採用小駝峰命名，契約列舉值如 `Present`、`Removed`、`Set` 及 `Remove` 會序列化為所示字串，而非數字。未知的要求屬性會遭拒絕。成功回應的時間戳記為 UTC `DateTimeOffset` 值，以預設的 System.Text.Json ISO 8601 格式序列化。伺服器持有的 `TimeProvider` 提供時間，以支援可確定重現的測試。維運就緒狀態介面是第 4.7 節的單一未加版本路由。
 
+Central 另外提供描述第 4.1–4.6 節端點的 OpenAPI 文件（`/swagger/v1/swagger.json`）與 Swagger UI（`/swagger`），供人員查看與試打（POC-061）。兩者不屬於 Client 使用的契約；本節的文字仍是契約的依據。
+
 ### 4.1 管理介面：Set
 
 `POST /api/v1/management/configurations/set`

@@ -36,6 +36,7 @@ public sealed class ManagementControllerDependencies
 
 [ApiController]
 [Route("api/v1/management/configurations")]
+[Tags("Management")]
 public sealed class ManagementConfigurationsController : ControllerBase
 {
     private readonly ManagementControllerDependencies _dependencies;
@@ -44,6 +45,13 @@ public sealed class ManagementConfigurationsController : ControllerBase
         _dependencies = dependencies;
 
     [HttpPost("set")]
+    [JsonRequestBody(
+        typeof(SetConfigurationRequest),
+        """{ "environment": "UAT", "key": "Demo:Message", "value": "central-value" }""")]
+    [ProducesResponseType<ConfigurationCommandResponse>(StatusCodes.Status201Created, "application/json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status500InternalServerError, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status503ServiceUnavailable, "application/problem+json")]
     public async Task<IActionResult> SetAsync(CancellationToken cancellationToken)
     {
         var request = await _dependencies.Reader.ReadRequiredAsync<SetConfigurationRequest>(
@@ -69,6 +77,15 @@ public sealed class ManagementConfigurationsController : ControllerBase
     }
 
     [HttpPost("remove")]
+    [JsonRequestBody(
+        typeof(RemoveConfigurationRequest),
+        """{ "environment": "UAT", "key": "Demo:Message" }""")]
+    [ProducesResponseType<ConfigurationCommandResponse>(StatusCodes.Status201Created, "application/json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status500InternalServerError, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status503ServiceUnavailable, "application/problem+json")]
     public async Task<IActionResult> RemoveAsync(CancellationToken cancellationToken)
     {
         var request = await _dependencies.Reader.ReadRequiredAsync<RemoveConfigurationRequest>(
@@ -93,6 +110,10 @@ public sealed class ManagementConfigurationsController : ControllerBase
     }
 
     [HttpGet]
+    [ProducesResponseType<ConfigurationListResponse>(StatusCodes.Status200OK, "application/json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status500InternalServerError, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status503ServiceUnavailable, "application/problem+json")]
     public async Task<IActionResult> ListAsync(
         [FromQuery] string? environment,
         CancellationToken cancellationToken)
@@ -115,6 +136,11 @@ public sealed class ManagementConfigurationsController : ControllerBase
     }
 
     [HttpGet("current")]
+    [ProducesResponseType<CurrentConfigurationResponse>(StatusCodes.Status200OK, "application/json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status500InternalServerError, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status503ServiceUnavailable, "application/problem+json")]
     public async Task<IActionResult> GetCurrentAsync(
         [FromQuery] string? environment,
         [FromQuery] string? key,
@@ -138,6 +164,11 @@ public sealed class ManagementConfigurationsController : ControllerBase
     }
 
     [HttpGet("history")]
+    [ProducesResponseType<ConfigurationHistoryResponse>(StatusCodes.Status200OK, "application/json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status500InternalServerError, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status503ServiceUnavailable, "application/problem+json")]
     public async Task<IActionResult> GetHistoryAsync(
         [FromQuery] string? environment,
         [FromQuery] string? key,

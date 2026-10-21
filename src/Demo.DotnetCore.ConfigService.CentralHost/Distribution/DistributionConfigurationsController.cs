@@ -24,6 +24,7 @@ public sealed class DistributionControllerDependencies
 
 [ApiController]
 [Route("api/v1/distribution/configurations")]
+[Tags("Distribution")]
 public sealed class DistributionConfigurationsController : ControllerBase
 {
     private readonly DistributionControllerDependencies _dependencies;
@@ -32,6 +33,13 @@ public sealed class DistributionConfigurationsController : ControllerBase
         _dependencies = dependencies;
 
     [HttpPost("resolve")]
+    [JsonRequestBody(
+        typeof(ResolveConfigurationsRequest),
+        """{ "environment": "UAT", "keys": ["Demo:Message", "Demo:LocalFallback"] }""")]
+    [ProducesResponseType<ResolveConfigurationsResponse>(StatusCodes.Status200OK, "application/json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status500InternalServerError, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status503ServiceUnavailable, "application/problem+json")]
     public async Task<IActionResult> ResolveAsync(CancellationToken cancellationToken)
     {
         var request = await _dependencies.Reader.ReadRequiredAsync<ResolveConfigurationsRequest>(
