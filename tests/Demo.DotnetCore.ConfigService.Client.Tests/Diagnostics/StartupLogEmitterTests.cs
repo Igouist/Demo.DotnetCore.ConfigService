@@ -86,6 +86,21 @@ public sealed class StartupLogEmitterTests
             ("CentralTraceId", "0HN1RETRY:00000002"));
     }
 
+    [Fact]
+    public void Unknown_response_member_warning_lists_names_only()
+    {
+        var logger = new RecordingLogger();
+        var emitter = new StartupLogEmitter(logger);
+        string[] names = ["revision", "future"];
+
+        emitter.TryUnknownResponseMembers(names);
+
+        LogEntry entry = Assert.Single(logger.Entries);
+        Assert.Equal(LogLevel.Warning, entry.Level);
+        Assert.Equal("Central configuration response contains members this Client version does not recognize: {UnknownResponseMembers}. They were ignored; consider upgrading the Client package.", entry.OriginalFormat);
+        AssertStructuredFields(entry, ("UnknownResponseMembers", names));
+    }
+
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
@@ -103,6 +118,7 @@ public sealed class StartupLogEmitterTests
         {
             emitter.TryInformation(1, 0, 1, TimeSpan.Zero);
             emitter.TryWarning(1, CentralConfigFailureKind.TransportFailure, null, TimeSpan.Zero);
+            emitter.TryUnknownResponseMembers(["future"]);
             emitter.TryError(failure);
         });
 

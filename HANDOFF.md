@@ -78,12 +78,17 @@
 - [#13](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/13)：Central 以 Swashbuckle 10.3.0（`SwaggerGen`、`SwaggerUI`、`Annotations`）提供 OpenAPI 文件 `/swagger/v1/swagger.json` 與 Swagger UI `/swagger`，一律開啟、不列入 `/health/ready`，取捨見決策紀錄 POC-061。控制器不使用模型繫結，所以 Set、Remove、Resolve 以 `JsonRequestBody` 屬性標示請求型別與範例（中央環境 `UAT`），由 `JsonRequestBodyOperationFilter` 寫入文件；以 Swashbuckle 標註屬性（`SwaggerOperation`、`SwaggerParameter`、`SwaggerResponse`、`SwaggerTag`）提供中文摘要、參數與回應說明，共用文字在 `OpenApiDescriptions`，回應標示成功的 `application/json` 與錯誤的 `application/problem+json`。既有端點行為不變。README、HTTP 操作說明第 4 節與設計文件第 4 節開頭已提及網址。
 - 驗證（Linux、SDK 10.0.113）：README「完整驗證」全部通過，format 無變更、Release build 0 warning；CentralHost.Tests 200（新增 `OpenApiDocumentTests` 8 個）、Client.Tests 189、DemoHost.Tests 12、EndToEnd.Tests 130。另以真正的 Central 程序（`127.0.0.1:5180`）與 Playwright 操作 Swagger UI，依序對 Set、current、history、列表、Resolve、Remove 按「Try it out」與「Execute」，回應均符合設計文件第 4 節，頁面顯示各端點的中文摘要與說明。
 
+### #20 回應相容性（PR 審查中）
+
+- [#20](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/20)：依 [ADR-0003](docs/adr/0003-tolerant-client-strict-central-requests.md)，Client 略過 Resolve 回應中不認識的最上層欄位，啟動照常完成，並發出一筆只列欄位名稱的 Warning（`UnknownResponseMembers`）提醒升級套件；`values`／`missingKeys` 的格式、重複與分割規則不變，Central 對請求仍以 `unknown_property` 嚴格拒絕。Demo 把這筆 Warning 輸出成 `unknown-response-members` 標記。設計文件第 8.2、9.3 節與第 15 節第 9 點、Demo／E2E 規格第 4 節標記清單與 Client README 已同步。
+- 驗證（Linux、SDK 10.0.113）：README「完整驗證」全部通過，format 無變更、Release build 0 warning；CentralHost.Tests 200、Client.Tests 196、DemoHost.Tests 13、EndToEnd.Tests 130。
+
 ### 下一步
 
 1. [#2](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/2) 第二段與 [#11](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/11) 的 Windows 驗證：維護者在 Windows 上以 `scripts/start-http-demo.ps1` 走一次 HTTP 演示，分別用 Windows PowerShell 5.1 與 PowerShell 7；留意執行原則、系統保留的連接埠範圍、示範當天使用的 `.http` 工具，以及結束後連接埠是否釋放。
 2. [#3](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/3)：在示範會議上取得架構決策共識，結論寫回決策紀錄，再依結論開立後續 Issue。
 3. 趁有人依賴契約之前定案的四項（2026-10-22 已決定、尚未實作），各 Issue 留言有完整結論：
-   - [#20](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/20)：Client 略過未知的最上層回應欄位並記 Warning，Central 對請求維持嚴格（[ADR-0003](docs/adr/0003-tolerant-client-strict-central-requests.md)）。須先於 #21 完成。
+   - [#20](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/20)：已實作，見上方。四項依序各開一個堆疊的 PR，須依 #20 → #23 的順序合併。
    - [#21](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/21)：Resolve 回應加上依請求設定鍵計算的 `revision`（決策紀錄 POC-062），並新增 `docs/knowledge/resolve-revision.md` 說明使用場景。
    - [#22](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/22)：項目版本記錄必填的 `changedBy` 與選填的 `reason`（POC-063）。
    - [#23](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/23)：管理介面要求共用的 `X-Api-Key`，Swagger UI 可帶標頭（POC-064）。

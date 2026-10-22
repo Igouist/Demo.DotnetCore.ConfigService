@@ -36,6 +36,13 @@ internal sealed class StartupLogEmitter(ILogger? logger)
                 centralProblem?.Code,
                 centralProblem?.TraceId));
 
+    internal void TryUnknownResponseMembers(IReadOnlyList<string> memberNames) =>
+        TryEmit(
+            LogLevel.Warning,
+            target => target.LogWarning(
+                "Central configuration response contains members this Client version does not recognize: {UnknownResponseMembers}. They were ignored; consider upgrading the Client package.",
+                memberNames));
+
     internal void TryError(CentralConfigLoadException exception) =>
         TryEmit(
             LogLevel.Error,
