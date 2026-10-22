@@ -233,8 +233,8 @@ public sealed class SqliteConfigurationEntryStoreReadTests
             new CommandDefinition(
                 """
                 INSERT INTO ConfigurationEntryVersions
-                    (ConfigurationEntryId, Version, Operation, Value, CreatedAtUtc)
-                SELECT Id, 2, 'Set', @Value, @CreatedAtUtc
+                    (ConfigurationEntryId, Version, Operation, Value, CreatedAtUtc, ChangedBy)
+                SELECT Id, 2, 'Set', @Value, @CreatedAtUtc, 'test-author'
                 FROM ConfigurationEntries
                 WHERE Environment = @Environment AND ConfigurationKey = @Key;
                 """,
@@ -522,8 +522,8 @@ public sealed class SqliteConfigurationEntryStoreReadTests
                 new CommandDefinition(
                     """
                     INSERT INTO ConfigurationEntryVersions
-                        (ConfigurationEntryId, Version, Operation, Value, CreatedAtUtc)
-                    SELECT Id, @Version, @Operation, @Value, @CreatedAtUtc
+                        (ConfigurationEntryId, Version, Operation, Value, CreatedAtUtc, ChangedBy)
+                    SELECT Id, @Version, @Operation, @Value, @CreatedAtUtc, 'test-author'
                     FROM ConfigurationEntries
                     WHERE Environment = @Environment AND ConfigurationKey = @Key;
                     """,

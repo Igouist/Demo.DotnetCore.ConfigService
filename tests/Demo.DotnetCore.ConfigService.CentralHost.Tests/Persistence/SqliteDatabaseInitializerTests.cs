@@ -34,8 +34,8 @@ public sealed class SqliteDatabaseInitializerTests
             INSERT INTO ConfigurationEntries (Id, Environment, ConfigurationKey)
             VALUES (1, 'Production', 'Demo:Message');
             INSERT INTO ConfigurationEntryVersions
-                (Id, ConfigurationEntryId, Version, Operation, Value, CreatedAtUtc)
-            VALUES (1, 1, 1, 'Set', 'hello', '2026-08-31T00:00:00Z');
+                (Id, ConfigurationEntryId, Version, Operation, Value, CreatedAtUtc, ChangedBy)
+            VALUES (1, 1, 1, 'Set', 'hello', '2026-08-31T00:00:00Z', 'test-author');
             """);
 
         await Assert.ThrowsAsync<SqliteException>(() => connection.ExecuteAsync("""
@@ -44,33 +44,33 @@ public sealed class SqliteDatabaseInitializerTests
             """));
         await Assert.ThrowsAsync<SqliteException>(() => connection.ExecuteAsync("""
             INSERT INTO ConfigurationEntryVersions
-                (Id, ConfigurationEntryId, Version, Operation, Value, CreatedAtUtc)
-            VALUES (2, 1, 1, 'Set', 'duplicate', '2026-08-31T00:00:01Z');
+                (Id, ConfigurationEntryId, Version, Operation, Value, CreatedAtUtc, ChangedBy)
+            VALUES (2, 1, 1, 'Set', 'duplicate', '2026-08-31T00:00:01Z', 'test-author');
             """));
         await Assert.ThrowsAsync<SqliteException>(() => connection.ExecuteAsync("""
             INSERT INTO ConfigurationEntryVersions
-                (Id, ConfigurationEntryId, Version, Operation, Value, CreatedAtUtc)
-            VALUES (3, 42, 2, 'Set', 'orphan', '2026-08-31T00:00:02Z');
+                (Id, ConfigurationEntryId, Version, Operation, Value, CreatedAtUtc, ChangedBy)
+            VALUES (3, 42, 2, 'Set', 'orphan', '2026-08-31T00:00:02Z', 'test-author');
             """));
         await Assert.ThrowsAsync<SqliteException>(() => connection.ExecuteAsync("""
             INSERT INTO ConfigurationEntryVersions
-                (Id, ConfigurationEntryId, Version, Operation, Value, CreatedAtUtc)
-            VALUES (4, 1, 0, 'Set', 'invalid-version', '2026-08-31T00:00:03Z');
+                (Id, ConfigurationEntryId, Version, Operation, Value, CreatedAtUtc, ChangedBy)
+            VALUES (4, 1, 0, 'Set', 'invalid-version', '2026-08-31T00:00:03Z', 'test-author');
             """));
         await Assert.ThrowsAsync<SqliteException>(() => connection.ExecuteAsync("""
             INSERT INTO ConfigurationEntryVersions
-                (Id, ConfigurationEntryId, Version, Operation, Value, CreatedAtUtc)
-            VALUES (5, 1, 2, 'Replace', 'invalid-operation', '2026-08-31T00:00:04Z');
+                (Id, ConfigurationEntryId, Version, Operation, Value, CreatedAtUtc, ChangedBy)
+            VALUES (5, 1, 2, 'Replace', 'invalid-operation', '2026-08-31T00:00:04Z', 'test-author');
             """));
         await Assert.ThrowsAsync<SqliteException>(() => connection.ExecuteAsync("""
             INSERT INTO ConfigurationEntryVersions
-                (Id, ConfigurationEntryId, Version, Operation, Value, CreatedAtUtc)
-            VALUES (6, 1, 2, 'Set', NULL, '2026-08-31T00:00:05Z');
+                (Id, ConfigurationEntryId, Version, Operation, Value, CreatedAtUtc, ChangedBy)
+            VALUES (6, 1, 2, 'Set', NULL, '2026-08-31T00:00:05Z', 'test-author');
             """));
         await Assert.ThrowsAsync<SqliteException>(() => connection.ExecuteAsync("""
             INSERT INTO ConfigurationEntryVersions
-                (Id, ConfigurationEntryId, Version, Operation, Value, CreatedAtUtc)
-            VALUES (7, 1, 2, 'Remove', 'invalid-value', '2026-08-31T00:00:06Z');
+                (Id, ConfigurationEntryId, Version, Operation, Value, CreatedAtUtc, ChangedBy)
+            VALUES (7, 1, 2, 'Remove', 'invalid-value', '2026-08-31T00:00:06Z', 'test-author');
             """));
 
         Assert.Equal(
@@ -99,8 +99,8 @@ public sealed class SqliteDatabaseInitializerTests
                 INSERT INTO ConfigurationEntries (Id, Environment, ConfigurationKey)
                 VALUES (1, 'Production', 'Demo:Message');
                 INSERT INTO ConfigurationEntryVersions
-                    (Id, ConfigurationEntryId, Version, Operation, Value, CreatedAtUtc)
-                VALUES (1, 1, 1, 'Set', 'preserved', '2026-08-31T00:00:00Z');
+                    (Id, ConfigurationEntryId, Version, Operation, Value, CreatedAtUtc, ChangedBy)
+                VALUES (1, 1, 1, 'Set', 'preserved', '2026-08-31T00:00:00Z', 'test-author');
                 """);
         }
 
@@ -148,6 +148,8 @@ public sealed class SqliteDatabaseInitializerTests
     public static TheoryData<string, string> IncompatibleVersion1Schemas => new()
     {
         { "missing required column", Version1Ddl.Replace("    CreatedAtUtc         TEXT NOT NULL,", "", StringComparison.Ordinal) },
+        { "schema before POC-063 attribution columns", Version1Ddl.Replace("    ChangedBy            TEXT NOT NULL,\n    Reason               TEXT NULL,\n", "", StringComparison.Ordinal) },
+        { "ChangedBy is nullable", Version1Ddl.Replace("ChangedBy            TEXT NOT NULL", "ChangedBy            TEXT NULL", StringComparison.Ordinal) },
         { "required column has wrong type", Version1Ddl.Replace("CreatedAtUtc         TEXT NOT NULL", "CreatedAtUtc         BLOB NOT NULL", StringComparison.Ordinal) },
         { "required column is nullable", Version1Ddl.Replace("ConfigurationEntryId INTEGER NOT NULL", "ConfigurationEntryId INTEGER NULL", StringComparison.Ordinal) },
         { "Id is not the primary key", Version1Ddl.Replace("Id               INTEGER PRIMARY KEY", "Id               INTEGER NOT NULL", StringComparison.Ordinal) },
@@ -408,6 +410,8 @@ public sealed class SqliteDatabaseInitializerTests
             Operation            TEXT NOT NULL CHECK (Operation IN ('Set', 'Remove')),
             Value                TEXT NULL,
             CreatedAtUtc         TEXT NOT NULL,
+            ChangedBy            TEXT NOT NULL,
+            Reason               TEXT NULL,
             CONSTRAINT FK_ConfigurationEntryVersions_Entry
                 FOREIGN KEY (ConfigurationEntryId) REFERENCES ConfigurationEntries (Id),
             CONSTRAINT UQ_ConfigurationEntryVersions_Version

@@ -16,15 +16,15 @@ public sealed class DistributionHttpContractTests
         using var client = factory.CreateClient();
 
         await AssertCreatedAsync(client, """
-                                         {"environment":"Production","key":"Demo:Message","value":"central-value"}
+                                         {"environment":"Production","key":"Demo:Message","value":"central-value","changedBy":"test-author"}
                                          """);
         await AssertCreatedAsync(client, """
-                                         {"environment":"Production","key":"Demo:Removed","value":"transient-value"}
+                                         {"environment":"Production","key":"Demo:Removed","value":"transient-value","changedBy":"test-author"}
                                          """);
         await AssertCreatedAsync(
             client,
             """
-            {"environment":"production","key":"demo:removed"}
+            {"environment":"production","key":"demo:removed","changedBy":"test-author"}
             """,
             "/api/v1/management/configurations/remove");
 
@@ -55,7 +55,7 @@ public sealed class DistributionHttpContractTests
         using var client = factory.CreateClient();
 
         await AssertCreatedAsync(client, """
-                                         {"environment":"Production","key":"Demo:Empty","value":""}
+                                         {"environment":"Production","key":"Demo:Empty","value":"","changedBy":"test-author"}
                                          """);
 
         using var resolveResponse = await PostJsonAsync(
@@ -90,11 +90,11 @@ public sealed class DistributionHttpContractTests
         const string request = """{"environment":"UAT","keys":["Demo:Message","Demo:NeverCreated"]}""";
         const string respelledRequest = """{"environment":"uat","keys":["demo:nevercreated","DEMO:MESSAGE"]}""";
 
-        await AssertCreatedAsync(client, """{"environment":"UAT","key":"Demo:Message","value":"first-secret-value"}""");
+        await AssertCreatedAsync(client, """{"environment":"UAT","key":"Demo:Message","value":"first-secret-value","changedBy":"test-author"}""");
         string first = await ResolveRevisionAsync(client, request);
         string respelled = await ResolveRevisionAsync(client, respelledRequest);
         string otherKeys = await ResolveRevisionAsync(client, """{"environment":"UAT","keys":["Demo:Message"]}""");
-        await AssertCreatedAsync(client, """{"environment":"UAT","key":"Demo:Message","value":"first-secret-value"}""");
+        await AssertCreatedAsync(client, """{"environment":"UAT","key":"Demo:Message","value":"first-secret-value","changedBy":"test-author"}""");
         string afterSameValueSet = await ResolveRevisionAsync(client, request);
 
         Assert.Matches("^r1-[0-9a-f]{24}$", first);

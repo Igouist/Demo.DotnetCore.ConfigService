@@ -26,6 +26,8 @@ internal sealed class FakeConfigurationEntryStore : IConfigurationEntryStore
 
     public List<(ConfigurationEntryIdentity Identity, DateTimeOffset CreatedAtUtc)> RemoveRequests { get; } = [];
 
+    public List<ChangeAttribution> CommandAttributions { get; } = [];
+
     public Task<ConfigurationCurrent?> GetCurrentAsync(
         ConfigurationEntryIdentity identity,
         CancellationToken cancellationToken)
@@ -62,19 +64,23 @@ internal sealed class FakeConfigurationEntryStore : IConfigurationEntryStore
     public Task<ConfigurationCommandReceipt> SetAsync(
         ConfigurationEntryIdentity identity,
         string value,
+        ChangeAttribution attribution,
         DateTimeOffset createdAtUtc,
         CancellationToken cancellationToken)
     {
         SetRequests.Add((identity, value, createdAtUtc));
+        CommandAttributions.Add(attribution);
         return Task.FromResult(SetResult ?? throw new InvalidOperationException("A Set result must be configured."));
     }
 
     public Task<RemoveStoreResult> RemoveAsync(
         ConfigurationEntryIdentity identity,
+        ChangeAttribution attribution,
         DateTimeOffset createdAtUtc,
         CancellationToken cancellationToken)
     {
         RemoveRequests.Add((identity, createdAtUtc));
+        CommandAttributions.Add(attribution);
         return Task.FromResult(RemoveResult ?? throw new InvalidOperationException("A Remove result must be configured."));
     }
 }

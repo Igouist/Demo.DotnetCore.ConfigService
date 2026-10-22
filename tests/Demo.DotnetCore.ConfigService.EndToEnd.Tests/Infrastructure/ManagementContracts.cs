@@ -1,8 +1,8 @@
 namespace Demo.DotnetCore.ConfigService.EndToEnd.Tests.Infrastructure;
 
-internal sealed record SetConfigurationRequest(string Environment, string Key, string Value);
+internal sealed record SetConfigurationRequest(string Environment, string Key, string Value, string ChangedBy);
 
-internal sealed record RemoveConfigurationRequest(string Environment, string Key);
+internal sealed record RemoveConfigurationRequest(string Environment, string Key, string ChangedBy);
 
 internal sealed record ManagementCommandResponse(
     string Environment,
@@ -23,7 +23,9 @@ internal sealed record ConfigurationVersionResponse(
     long Version,
     string Operation,
     string? Value,
-    DateTimeOffset CreatedAtUtc);
+    DateTimeOffset CreatedAtUtc,
+    string ChangedBy,
+    string? Reason);
 
 internal sealed record ConfigurationHistoryResponse(
     string Environment,

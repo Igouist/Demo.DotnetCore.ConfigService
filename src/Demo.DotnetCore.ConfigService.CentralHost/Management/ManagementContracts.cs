@@ -1,8 +1,17 @@
 namespace Demo.DotnetCore.ConfigService.CentralHost;
 
-internal sealed record SetConfigurationRequest(string? Environment, string? Key, string? Value);
+internal sealed record SetConfigurationRequest(
+    string? Environment,
+    string? Key,
+    string? Value,
+    string? ChangedBy,
+    string? Reason);
 
-internal sealed record RemoveConfigurationRequest(string? Environment, string? Key);
+internal sealed record RemoveConfigurationRequest(
+    string? Environment,
+    string? Key,
+    string? ChangedBy,
+    string? Reason);
 
 internal sealed record ConfigurationIdentityQuery(string? Environment, string? Key);
 
@@ -27,7 +36,9 @@ internal sealed record ConfigurationVersionResponse(
     long Version,
     ConfigurationOperation Operation,
     string? Value,
-    DateTimeOffset CreatedAtUtc);
+    DateTimeOffset CreatedAtUtc,
+    string ChangedBy,
+    string? Reason);
 
 internal sealed record ConfigurationHistoryResponse(
     string Environment,
