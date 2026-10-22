@@ -28,6 +28,44 @@ public sealed class DistributionResolveResponseParserTests
         Assert.Equal(1, response.MissingKeyCount);
     }
 
+    [Fact]
+    public void Unknown_top_level_members_are_skipped_and_reported_by_name()
+    {
+        KeySelection selection = CreateSelection(["Demo:Required"], ["Demo:Fallback"]);
+        ReadOnlyMemory<byte> json = Json(
+            """
+            {
+              "future": { "nested": "secret-looking" },
+              "values": { "Demo:Required": "central" },
+              "Future": [1, 2],
+              "missingKeys": [ "Demo:Fallback" ],
+              "other": null
+            }
+            """);
+
+        bool parsed = DistributionResolveResponseParser.TryParseAndValidate(
+            json,
+            selection,
+            out ValidatedDistributionResponse? response);
+
+        Assert.True(parsed);
+        Assert.Equal("central", response!.Values["Demo:Required"]);
+        Assert.True(response.IsMissing("Demo:Fallback"));
+        Assert.Equal(["future", "other"], response.UnknownMembers);
+    }
+
+    [Fact]
+    public void Response_without_unknown_members_reports_none()
+    {
+        KeySelection selection = CreateSelection(["Demo:Required"], []);
+
+        Assert.True(DistributionResolveResponseParser.TryParseAndValidate(
+            Json("""{ "values": { "Demo:Required": "x" }, "missingKeys": [] }"""),
+            selection,
+            out ValidatedDistributionResponse? response));
+        Assert.Empty(response!.UnknownMembers);
+    }
+
     [Theory]
     [MemberData(nameof(InvalidResponses))]
     public void Untrustworthy_successful_response_is_rejected(string json)
@@ -66,7 +104,10 @@ public sealed class DistributionResolveResponseParserTests
         "[]",
         "{ \"values\": {}, \"values\": {}, \"missingKeys\": [\"Demo:Required\", \"Demo:Fallback\"] }",
         "{ \"Values\": {}, \"values\": {}, \"missingKeys\": [\"Demo:Required\", \"Demo:Fallback\"] }",
+        "{ \"values\": {}, \"future\": [\"Demo:Required\", \"Demo:Fallback\"] }",
         "{ \"values\": {}, \"missingKeys\": [], \"future\": true }",
+        "{ \"values\": {}, \"missingKeys\": [\"Demo:Required\", \"Demo:Fallback\"], \"MissingKeys\": [], \"future\": true }",
+        "{ \"values\": { \"Demo:Required\": \"x\" }, \"missingKeys\": [\"Demo:Fallback\"], \"missingKeys\": [\"Demo:Fallback\"], \"future\": 1 }",
         "{ \"values\": { \"Demo:Required\": \"a\", \"demo:required\": \"b\" }, \"missingKeys\": [\"Demo:Fallback\"] }",
         "{ \"values\": { \"Demo:Required\": null }, \"missingKeys\": [\"Demo:Fallback\"] }",
         "{ \"values\": { \"Demo:Required\": 1 }, \"missingKeys\": [\"Demo:Fallback\"] }",

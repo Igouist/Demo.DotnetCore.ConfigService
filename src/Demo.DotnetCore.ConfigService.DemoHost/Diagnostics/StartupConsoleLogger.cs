@@ -97,6 +97,19 @@ internal sealed class StartupConsoleLogger : ILogger
                     elapsedMs = informationElapsedMs
                 };
                 return true;
+            case LogLevel.Warning when fields.ContainsKey("UnknownResponseMembers"):
+                if (!TryReadTextList(fields, "UnknownResponseMembers", out string[] unknownResponseMembers))
+                {
+                    return false;
+                }
+
+                marker = new
+                {
+                    source = Source,
+                    @event = "unknown-response-members",
+                    unknownResponseMembers
+                };
+                return true;
             case LogLevel.Warning:
                 if (!TryReadInt32(fields, "AttemptCount", out int warningAttemptCount)
                     || !TryReadText(fields, "FailureKind", out string warningFailureKind)

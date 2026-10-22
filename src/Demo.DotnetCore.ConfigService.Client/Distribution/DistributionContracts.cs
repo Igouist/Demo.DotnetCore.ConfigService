@@ -19,14 +19,18 @@ internal sealed class ValidatedDistributionResponse
 
     internal ValidatedDistributionResponse(
         IDictionary<string, string> values,
-        IEnumerable<string> missingKeys)
+        IEnumerable<string> missingKeys,
+        IReadOnlyList<string>? unknownMembers = null)
     {
         Values = new ReadOnlyDictionary<string, string>(
             new Dictionary<string, string>(values, StringComparer.OrdinalIgnoreCase));
         _missingKeys = new HashSet<string>(missingKeys, StringComparer.OrdinalIgnoreCase);
+        UnknownMembers = unknownMembers?.ToArray() ?? [];
     }
 
     internal IReadOnlyDictionary<string, string> Values { get; }
+
+    internal IReadOnlyList<string> UnknownMembers { get; }
 
     internal int MissingKeyCount => _missingKeys.Count;
 

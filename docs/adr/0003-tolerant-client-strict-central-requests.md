@@ -24,4 +24,4 @@ Central 可以在 v1 回應中向後相容地新增欄位。Client 解析 Resolv
 - 請求端嚴格驗證保留明確的錯誤回報，方便除錯；代價是 Client 不能直接在請求本文加欄位給舊版 Central。
 - 這條規則一旦有使用端部署就很難收回，因此在 POC 成為正式實作地基之前定案。
 
-實作與設計文件第 8.2 節、第 15 節第 9 點的修訂由 [#20](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/20) 追蹤；完成前，程式與設計文件仍描述原本的嚴格行為。
+已由 [#20](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/20) 實作，設計文件第 8.2 節、第 9.3 節與第 15 節第 9 點已同步修訂。

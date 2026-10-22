@@ -253,6 +253,11 @@ internal sealed class RetryingDistributionResolver
                 HttpStatusCode.OK);
         }
 
+        if (validated.UnknownMembers.Count != 0)
+        {
+            _logEmitter.TryUnknownResponseMembers(validated.UnknownMembers);
+        }
+
         string[] missingRequired = bootstrap.KeySelection.RequiredKeys
             .Where(key => validated.IsMissing(key.DeclaredKey))
             .Select(key => key.DeclaredKey)
