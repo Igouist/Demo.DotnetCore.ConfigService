@@ -148,7 +148,7 @@ public sealed class SqliteDatabaseInitializerTests
     public static TheoryData<string, string> IncompatibleVersion1Schemas => new()
     {
         { "missing required column", Version1Ddl.Replace("    CreatedAtUtc         TEXT NOT NULL,", "", StringComparison.Ordinal) },
-        { "schema before POC-063 attribution columns", Version1Ddl.Replace("    ChangedBy            TEXT NOT NULL,\n    Reason               TEXT NULL,\n", "", StringComparison.Ordinal) },
+        { "schema before POC-063 attribution columns", Version1Ddl.Replace("    ChangedBy            TEXT NOT NULL,", "", StringComparison.Ordinal).Replace("    Reason               TEXT NULL,", "", StringComparison.Ordinal) },
         { "ChangedBy is nullable", Version1Ddl.Replace("ChangedBy            TEXT NOT NULL", "ChangedBy            TEXT NULL", StringComparison.Ordinal) },
         { "required column has wrong type", Version1Ddl.Replace("CreatedAtUtc         TEXT NOT NULL", "CreatedAtUtc         BLOB NOT NULL", StringComparison.Ordinal) },
         { "required column is nullable", Version1Ddl.Replace("ConfigurationEntryId INTEGER NOT NULL", "ConfigurationEntryId INTEGER NULL", StringComparison.Ordinal) },
