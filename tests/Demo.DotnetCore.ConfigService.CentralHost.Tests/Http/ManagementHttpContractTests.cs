@@ -19,7 +19,7 @@ public sealed class ManagementHttpContractTests
                    client,
                    "/api/v1/management/configurations/set",
                    """
-                   {"environment":"Production","key":"Demo:Message","value":"central-value"}
+                   {"environment":"Production","key":"Demo:Message","value":"central-value","changedBy":"test-author"}
                    """))
         {
             Assert.Equal(HttpStatusCode.Created, setResponse.StatusCode);
@@ -32,7 +32,7 @@ public sealed class ManagementHttpContractTests
                    client,
                    "/api/v1/management/configurations/set",
                    """
-                   {"environment":"Production","key":"Demo:Empty","value":""}
+                   {"environment":"Production","key":"Demo:Empty","value":"","changedBy":"test-author"}
                    """))
         {
             Assert.Equal(HttpStatusCode.Created, setEmptyResponse.StatusCode);
@@ -60,7 +60,7 @@ public sealed class ManagementHttpContractTests
                    client,
                    "/api/v1/management/configurations/remove",
                    """
-                   {"environment":"pRoDuCtIoN","key":"dEmO:mEsSaGe"}
+                   {"environment":"pRoDuCtIoN","key":"dEmO:mEsSaGe","changedBy":"test-author"}
                    """))
         {
             Assert.Equal(HttpStatusCode.Created, removeResponse.StatusCode);
@@ -118,7 +118,7 @@ public sealed class ManagementHttpContractTests
             using var setResponse = await PostJsonAsync(
                 client,
                 "/api/v1/management/configurations/set",
-                JsonSerializer.Serialize(new { environment, key, value }));
+                JsonSerializer.Serialize(new { environment, key, value, changedBy = "test-author" }));
             Assert.Equal(HttpStatusCode.Created, setResponse.StatusCode);
         }
 
@@ -126,7 +126,7 @@ public sealed class ManagementHttpContractTests
                    client,
                    "/api/v1/management/configurations/remove",
                    """
-                   {"environment":"UAT","key":"Demo:Removed"}
+                   {"environment":"UAT","key":"Demo:Removed","changedBy":"test-author"}
                    """))
         {
             Assert.Equal(HttpStatusCode.Created, removeResponse.StatusCode);
@@ -164,6 +164,56 @@ public sealed class ManagementHttpContractTests
         AssertObjectProperties(body.RootElement, "environment", "configurations");
         Assert.Equal("NeverCreated", body.RootElement.GetProperty("environment").GetString());
         Assert.Equal(0, body.RootElement.GetProperty("configurations").GetArrayLength());
+    }
+
+    [Fact]
+    public async Task History_returns_the_trimmed_change_attribution_of_each_version()
+    {
+        await using var factory = new CentralHostWebApplicationFactory();
+        using var client = factory.CreateClient();
+
+        using (var setResponse = await PostJsonAsync(
+                   client,
+                   "/api/v1/management/configurations/set",
+                   """{"environment":"UAT","key":"Demo:Attributed","value":"v1","changedBy":"  alice  ","reason":"  rotate key  "}"""))
+        {
+            Assert.Equal(HttpStatusCode.Created, setResponse.StatusCode);
+        }
+
+        using (var removeResponse = await PostJsonAsync(
+                   client,
+                   "/api/v1/management/configurations/remove",
+                   """{"environment":"UAT","key":"Demo:Attributed","changedBy":"bob","reason":"   "}"""))
+        {
+            Assert.Equal(HttpStatusCode.Created, removeResponse.StatusCode);
+        }
+
+        using var historyResponse = await client.GetAsync(
+            "/api/v1/management/configurations/history?environment=UAT&key=Demo:Attributed");
+        using var historyBody = await ReadJsonAsync(historyResponse);
+        var versions = historyBody.RootElement.GetProperty("versions").EnumerateArray().ToArray();
+
+        Assert.Equal("bob", versions[0].GetProperty("changedBy").GetString());
+        Assert.Equal(JsonValueKind.Null, versions[0].GetProperty("reason").ValueKind);
+        Assert.Equal("alice", versions[1].GetProperty("changedBy").GetString());
+        Assert.Equal("rotate key", versions[1].GetProperty("reason").GetString());
+    }
+
+    [Theory]
+    [InlineData("/api/v1/management/configurations/set", """{"environment":"UAT","key":"Demo:Unattributed","value":"v1"}""")]
+    [InlineData("/api/v1/management/configurations/remove", """{"environment":"UAT","key":"Demo:Unattributed"}""")]
+    public async Task Commands_without_changed_by_are_rejected_before_writing(string path, string json)
+    {
+        await using var factory = new CentralHostWebApplicationFactory();
+        using var client = factory.CreateClient();
+
+        using var response = await PostJsonAsync(client, path, json);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var error = Assert.Single(body.RootElement.GetProperty("errors").EnumerateArray());
+        Assert.Equal("changedBy", error.GetProperty("path").GetString());
+        Assert.Equal("changed_by_required", error.GetProperty("code").GetString());
     }
 
     private static async Task<HttpResponseMessage> PostJsonAsync(HttpClient client, string path, string json) =>
@@ -230,7 +280,9 @@ public sealed class ManagementHttpContractTests
         JsonValueKind valueKind,
         string? value)
     {
-        AssertObjectProperties(response, "version", "operation", "value", "createdAtUtc");
+        AssertObjectProperties(response, "version", "operation", "value", "createdAtUtc", "changedBy", "reason");
+        Assert.Equal("test-author", response.GetProperty("changedBy").GetString());
+        Assert.Equal(JsonValueKind.Null, response.GetProperty("reason").ValueKind);
         Assert.Equal(version, response.GetProperty("version").GetInt64());
         Assert.Equal(operation, response.GetProperty("operation").GetString());
         var valueElement = response.GetProperty("value");

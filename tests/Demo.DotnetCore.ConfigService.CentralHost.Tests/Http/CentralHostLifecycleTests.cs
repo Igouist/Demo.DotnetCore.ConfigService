@@ -21,7 +21,7 @@ public sealed class CentralHostLifecycleTests
                    client,
                    "/api/v1/management/configurations/set",
                    """
-                   {"environment":"UAT","key":"Demo:Message","value":"central-value"}
+                   {"environment":"UAT","key":"Demo:Message","value":"central-value","changedBy":"test-author"}
                    """))
         {
             Assert.Equal(HttpStatusCode.Created, setResponse.StatusCode);
@@ -55,7 +55,7 @@ public sealed class CentralHostLifecycleTests
         {
             Assert.Equal(HttpStatusCode.OK, resolveResponse.StatusCode);
             using var resolveBody = await ReadJsonAsync(resolveResponse);
-            AssertTopLevelMembers(resolveBody.RootElement, "values", "missingKeys");
+            AssertTopLevelMembers(resolveBody.RootElement, "values", "missingKeys", "revision");
 
             var values = resolveBody.RootElement.GetProperty("values");
             AssertTopLevelMembers(values, "Demo:Message");
@@ -72,7 +72,7 @@ public sealed class CentralHostLifecycleTests
                    client,
                    "/api/v1/management/configurations/remove",
                    """
-                   {"environment":"uat","key":"demo:message"}
+                   {"environment":"uat","key":"demo:message","changedBy":"test-author"}
                    """))
         {
             Assert.Equal(HttpStatusCode.Created, removeResponse.StatusCode);
@@ -90,7 +90,7 @@ public sealed class CentralHostLifecycleTests
         {
             Assert.Equal(HttpStatusCode.OK, resolveRemovedResponse.StatusCode);
             using var resolveRemovedBody = await ReadJsonAsync(resolveRemovedResponse);
-            AssertTopLevelMembers(resolveRemovedBody.RootElement, "values", "missingKeys");
+            AssertTopLevelMembers(resolveRemovedBody.RootElement, "values", "missingKeys", "revision");
             AssertTopLevelMembers(resolveRemovedBody.RootElement.GetProperty("values"));
             Assert.Equal(
                 ["Demo:Message"],
@@ -103,7 +103,7 @@ public sealed class CentralHostLifecycleTests
                    client,
                    "/api/v1/management/configurations/set",
                    """
-                   {"environment":"uat","key":"DEMO:MESSAGE","value":""}
+                   {"environment":"uat","key":"DEMO:MESSAGE","value":"","changedBy":"test-author"}
                    """))
         {
             Assert.Equal(HttpStatusCode.Created, restoreResponse.StatusCode);
@@ -207,7 +207,9 @@ public sealed class CentralHostLifecycleTests
         string? value,
         DateTimeOffset createdAtUtc)
     {
-        AssertTopLevelMembers(response, "version", "operation", "value", "createdAtUtc");
+        AssertTopLevelMembers(response, "version", "operation", "value", "createdAtUtc", "changedBy", "reason");
+        Assert.Equal("test-author", response.GetProperty("changedBy").GetString());
+        Assert.Equal(JsonValueKind.Null, response.GetProperty("reason").ValueKind);
         Assert.Equal(version, response.GetProperty("version").GetInt64());
         Assert.Equal(operation, response.GetProperty("operation").GetString());
         var valueElement = response.GetProperty("value");

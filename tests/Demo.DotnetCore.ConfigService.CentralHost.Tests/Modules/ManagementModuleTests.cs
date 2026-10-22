@@ -7,6 +7,7 @@ public sealed class ManagementModuleTests
     private static readonly EnvironmentName Environment = EnvironmentName.FromValidated("Production");
     private static readonly ConfigurationKey Key = ConfigurationKey.FromValidated("Demo:Message");
     private static readonly DateTimeOffset Timestamp = new(2026, 9, 2, 1, 2, 3, TimeSpan.Zero);
+    private static readonly ChangeAttribution Attribution = ChangeAttribution.FromValidated("alice", "rotate");
 
     [Fact]
     public async Task SetAsync_passes_one_utc_timestamp_to_one_atomic_store_call_and_returns_the_store_receipt()
@@ -16,7 +17,7 @@ public sealed class ManagementModuleTests
         var timeProvider = new ManualTimeProvider(Timestamp);
         var module = new ManagementModule(store, timeProvider);
 
-        var result = await module.SetAsync(Environment, Key, "configured-value", CancellationToken.None);
+        var result = await module.SetAsync(Environment, Key, "configured-value", Attribution, CancellationToken.None);
 
         Assert.Same(receipt, result);
         var call = Assert.Single(store.SetRequests);
@@ -24,6 +25,7 @@ public sealed class ManagementModuleTests
         Assert.Equal(Key, call.Identity.Key);
         Assert.Equal("configured-value", call.Value);
         Assert.Equal(Timestamp, call.CreatedAtUtc);
+        Assert.Same(Attribution, Assert.Single(store.CommandAttributions));
         Assert.Equal(1, timeProvider.GetUtcNowCallCount);
         Assert.Empty(store.CurrentRequests);
         Assert.Empty(store.HistoryRequests);
@@ -42,13 +44,14 @@ public sealed class ManagementModuleTests
         var timeProvider = new ManualTimeProvider(Timestamp);
         var module = new ManagementModule(store, timeProvider);
 
-        var result = await module.RemoveAsync(Environment, Key, CancellationToken.None);
+        var result = await module.RemoveAsync(Environment, Key, Attribution, CancellationToken.None);
 
         Assert.Same(receipt, result);
         var call = Assert.Single(store.RemoveRequests);
         Assert.Equal(Environment, call.Identity.Environment);
         Assert.Equal(Key, call.Identity.Key);
         Assert.Equal(Timestamp, call.CreatedAtUtc);
+        Assert.Same(Attribution, Assert.Single(store.CommandAttributions));
         Assert.Equal(1, timeProvider.GetUtcNowCallCount);
         Assert.Empty(store.CurrentRequests);
         Assert.Empty(store.HistoryRequests);
@@ -63,7 +66,7 @@ public sealed class ManagementModuleTests
         var module = new ManagementModule(store, new ManualTimeProvider(Timestamp));
 
         var exception = await Assert.ThrowsAsync<ConfigurationEntryNotFoundException>(() =>
-            module.RemoveAsync(Environment, Key, CancellationToken.None));
+            module.RemoveAsync(Environment, Key, Attribution, CancellationToken.None));
 
         Assert.Equal("The requested Configuration Entry was not found.", exception.Message);
     }
@@ -75,7 +78,7 @@ public sealed class ManagementModuleTests
         var module = new ManagementModule(store, new ManualTimeProvider(Timestamp));
 
         var exception = await Assert.ThrowsAsync<ConfigurationEntryAlreadyRemovedException>(() =>
-            module.RemoveAsync(Environment, Key, CancellationToken.None));
+            module.RemoveAsync(Environment, Key, Attribution, CancellationToken.None));
 
         Assert.Equal("The requested Configuration Entry is already removed.", exception.Message);
     }
@@ -121,7 +124,7 @@ public sealed class ManagementModuleTests
         var history = new ConfigurationHistory(
             storedEnvironment,
             storedKey,
-            [new ConfigurationVersion(2, ConfigurationOperation.Set, "stored-value", Timestamp)]);
+            [new ConfigurationVersion(2, ConfigurationOperation.Set, "stored-value", Timestamp, Attribution)]);
         var store = new FakeConfigurationEntryStore { CurrentResult = current, HistoryResult = history };
         var module = new ManagementModule(store, new ManualTimeProvider(Timestamp));
 

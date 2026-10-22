@@ -28,9 +28,9 @@ internal sealed class SqliteConfigurationEntryStore : IConfigurationEntryStore
 
     private const string InsertVersionSql = """
         INSERT INTO ConfigurationEntryVersions
-            (ConfigurationEntryId, Version, Operation, Value, CreatedAtUtc)
+            (ConfigurationEntryId, Version, Operation, Value, CreatedAtUtc, ChangedBy, Reason)
         VALUES
-            (@EntryId, @Version, @Operation, @Value, @CreatedAtUtc);
+            (@EntryId, @Version, @Operation, @Value, @CreatedAtUtc, @ChangedBy, @Reason);
         """;
 
     private const string SelectCurrentSql = """
@@ -40,7 +40,9 @@ internal sealed class SqliteConfigurationEntryStore : IConfigurationEntryStore
             v.Version,
             v.Operation,
             v.Value,
-            v.CreatedAtUtc
+            v.CreatedAtUtc,
+            v.ChangedBy,
+            v.Reason
         FROM ConfigurationEntries AS e
         JOIN ConfigurationEntryVersions AS v
           ON v.ConfigurationEntryId = e.Id
@@ -57,7 +59,9 @@ internal sealed class SqliteConfigurationEntryStore : IConfigurationEntryStore
             v.Version,
             v.Operation,
             v.Value,
-            v.CreatedAtUtc
+            v.CreatedAtUtc,
+            v.ChangedBy,
+            v.Reason
         FROM ConfigurationEntries AS e
         JOIN ConfigurationEntryVersions AS v
           ON v.ConfigurationEntryId = e.Id
@@ -75,6 +79,8 @@ internal sealed class SqliteConfigurationEntryStore : IConfigurationEntryStore
                 Operation,
                 Value,
                 CreatedAtUtc,
+                ChangedBy,
+                Reason,
                 ROW_NUMBER() OVER (
                     PARTITION BY ConfigurationEntryId
                     ORDER BY Version DESC
@@ -87,7 +93,9 @@ internal sealed class SqliteConfigurationEntryStore : IConfigurationEntryStore
             latest.Version,
             latest.Operation,
             latest.Value,
-            latest.CreatedAtUtc
+            latest.CreatedAtUtc,
+            latest.ChangedBy,
+            latest.Reason
         FROM ConfigurationEntries AS e
         LEFT JOIN LatestVersions AS latest
           ON latest.ConfigurationEntryId = e.Id
@@ -137,6 +145,7 @@ internal sealed class SqliteConfigurationEntryStore : IConfigurationEntryStore
         SELECT
             requested.Ordinal,
             entry.ConfigurationKey,
+            latest.Version,
             latest.Operation,
             latest.Value
         FROM RequestedConfigurationKeys AS requested
@@ -329,6 +338,7 @@ internal sealed class SqliteConfigurationEntryStore : IConfigurationEntryStore
     public Task<ConfigurationCommandReceipt> SetAsync(
         ConfigurationEntryIdentity identity,
         string value,
+        ChangeAttribution attribution,
         DateTimeOffset createdAtUtc,
         CancellationToken cancellationToken) =>
         ExecuteWriteAsync(
@@ -380,6 +390,7 @@ internal sealed class SqliteConfigurationEntryStore : IConfigurationEntryStore
                     version,
                     ConfigurationOperation.Set,
                     value,
+                    attribution,
                     createdAtUtc,
                     cancellationToken);
 
@@ -394,6 +405,7 @@ internal sealed class SqliteConfigurationEntryStore : IConfigurationEntryStore
 
     public Task<RemoveStoreResult> RemoveAsync(
         ConfigurationEntryIdentity identity,
+        ChangeAttribution attribution,
         DateTimeOffset createdAtUtc,
         CancellationToken cancellationToken) =>
         ExecuteWriteAsync<RemoveStoreResult>(
@@ -428,6 +440,7 @@ internal sealed class SqliteConfigurationEntryStore : IConfigurationEntryStore
                     version,
                     ConfigurationOperation.Remove,
                     value: null,
+                    attribution,
                     createdAtUtc,
                     cancellationToken);
 
@@ -659,6 +672,7 @@ internal sealed class SqliteConfigurationEntryStore : IConfigurationEntryStore
         long version,
         ConfigurationOperation operation,
         string? value,
+        ChangeAttribution attribution,
         DateTimeOffset createdAtUtc,
         CancellationToken cancellationToken) =>
         connection.ExecuteAsync(
@@ -670,7 +684,9 @@ internal sealed class SqliteConfigurationEntryStore : IConfigurationEntryStore
                     Version = version,
                     Operation = operation.ToString(),
                     Value = value,
-                    CreatedAtUtc = createdAtUtc.ToString("O", CultureInfo.InvariantCulture)
+                    CreatedAtUtc = createdAtUtc.ToString("O", CultureInfo.InvariantCulture),
+                    attribution.ChangedBy,
+                    attribution.Reason
                 },
                 transaction,
                 cancellationToken: cancellationToken));
@@ -702,7 +718,9 @@ internal sealed class SqliteConfigurationEntryStore : IConfigurationEntryStore
             row.Version,
             operation,
             value,
-            ParseCreatedAtUtc(row.CreatedAtUtc));
+            ParseCreatedAtUtc(row.CreatedAtUtc),
+            ChangeAttribution.FromStored(row.ChangedBy, row.Reason)
+                ?? throw CorruptStoredShape("A stored Entry Version has no ChangedBy."));
     }
 
     private static ConfigurationEntrySummary ToSummary(StoredEntrySummaryRow row)
@@ -719,7 +737,9 @@ internal sealed class SqliteConfigurationEntryStore : IConfigurationEntryStore
             Version = storedVersion,
             Operation = row.Operation,
             Value = row.Value,
-            CreatedAtUtc = row.CreatedAtUtc
+            CreatedAtUtc = row.CreatedAtUtc,
+            ChangedBy = row.ChangedBy,
+            Reason = row.Reason
         });
         return new ConfigurationEntrySummary(
             current.Key,
@@ -732,7 +752,7 @@ internal sealed class SqliteConfigurationEntryStore : IConfigurationEntryStore
     {
         var key = ToKey(row.ConfigurationKey);
         var operation = ParseOperation(row.Operation);
-        return new StoredResolution(key, ToState(operation, row.Value), row.Value);
+        return new StoredResolution(key, row.Version, ToState(operation, row.Value), row.Value);
     }
 
     private static ConfigurationEntryIdentity ToIdentity(StoredReadVersion row) => new(

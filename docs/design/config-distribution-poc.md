@@ -182,11 +182,15 @@ Central 另外提供描述第 4.1–4.6 節端點的 OpenAPI 文件（`/swagger/
 {
   "environment": "UAT",
   "key": "Demo:Message",
-  "value": "central-value"
+  "value": "central-value",
+  "changedBy": "alice",
+  "reason": "更新歡迎訊息"
 }
 ```
 
 `value` 為必要欄位，且不可為 null。`""` 是有效值。其 UTF-8 編碼大小最多可為 16 KiB（16,384 位元組），包含上限值。
+
+`changedBy` 為必要欄位，`reason` 為選填（POC-063），Set 與 Remove 相同。兩者先去除前後空白再驗證：`changedBy` 去除後不可為空白（`changed_by_required`），最多 100 個字元（`changed_by_too_long`）；`reason` 最多 500 個字元（`reason_too_long`），省略、null 或只含空白都儲存為 null。兩者都不可包含控制字元，包括換行（`changed_by_invalid_characters`、`reason_invalid_characters`）。字元數以 UTF-16 程式碼單位計算。兩個欄位會原樣出現在歷程回應中，不得放入機密。`changedBy` 是呼叫端自行填寫的文字，不是驗證過的身分；第 11 節的 API Key 是共用金鑰，無法區分人員。未來有登入機制時，改由伺服器依登入身分帶入或檢查此欄位，儲存形狀不變。
 
 成功：`201 Created`
 
@@ -211,11 +215,13 @@ Central 另外提供描述第 4.1–4.6 節端點的 OpenAPI 文件（`/swagger/
 ```json
 {
   "environment": "uat",
-  "key": "demo:message"
+  "key": "demo:message",
+  "changedBy": "alice",
+  "reason": "不再使用"
 }
 ```
 
-要求契約沒有 `value` 成員；傳送此成員會造成未知屬性驗證錯誤。
+要求契約沒有 `value` 成員；傳送此成員會造成未知屬性驗證錯誤。`changedBy` 與 `reason` 的規則與第 4.1 節相同。
 
 成功：`201 Created`
 
@@ -265,19 +271,23 @@ Removed 回應：`200 OK`，含有 `"state": "Removed"` 與 `"value": null`。�
       "version": 2,
       "operation": "Remove",
       "value": null,
-      "createdAtUtc": "2026-08-30T07:05:00+00:00"
+      "createdAtUtc": "2026-08-30T07:05:00+00:00",
+      "changedBy": "alice",
+      "reason": null
     },
     {
       "version": 1,
       "operation": "Set",
       "value": "central-value",
-      "createdAtUtc": "2026-08-30T07:00:00+00:00"
+      "createdAtUtc": "2026-08-30T07:00:00+00:00",
+      "changedBy": "alice",
+      "reason": "更新歡迎訊息"
     }
   ]
 }
 ```
 
-版本以遞減順序排列。此 POC 的歷程不分頁。從未建立的項目回傳 `404 Not Found`。
+版本以遞減順序排列。每個版本回傳寫入時的 `changedBy` 與 `reason`（未填為 null）。目前狀態與列表回應不包含這兩個欄位。此 POC 的歷程不分頁。從未建立的項目回傳 `404 Not Found`。
 
 ### 4.5 管理介面：列出中央環境的設定鍵
 
@@ -341,16 +351,19 @@ Removed 回應：`200 OK`，含有 `"state": "Removed"` 與 `"value": null`。�
   },
   "missingKeys": [
     "Demo:LocalFallback"
-  ]
+  ],
+  "revision": "r1-8bbca0abc2ea8e798b908301"
 }
 ```
 
-這兩個集合須在不區分大小寫的比較下，精確分割要求中相異的設定鍵：
+`values` 與 `missingKeys` 這兩個集合須在不區分大小寫的比較下，精確分割要求中相異的設定鍵：
 
 - 存在的項目在 `values` 中出現一次，包括值為空字串的項目；
 - 已移除的項目以儲存的顯示拼寫出現在 `missingKeys`；
 - 從未建立的項目以要求中的拼寫出現在 `missingKeys`；
-- 不回傳未要求的設定鍵、null 值、版本、時間戳記、使用端識別、缺值行為（Missing Behavior）或 `removedKeys`。
+- 不回傳未要求的設定鍵、null 值、逐鍵版本、時間戳記、使用端識別、缺值行為（Missing Behavior）或 `removedKeys`。
+
+`revision` 是依這次請求的設定鍵計算的不透明指紋（POC-062）：Central 在讀取值的同一個交易內取得每個請求設定鍵的最新項目版本號（從未建立為 `0`，已移除為其 Remove 版本號），把中央環境與設定鍵轉成不變文化特性大寫、設定鍵依序數排序後寫成 JSON 陣列，取其 UTF-8 的 SHA-256 前 12 個位元組，以小寫十六進位加上前綴 `r1-`。它不儲存在 Central，只能比較相同或不同。Central 每次 Resolve 以 Information 日誌記錄 `TraceIdentifier`、中央環境、`Revision` 與各設定鍵的版本號，不記錄設定值。用戶端把它帶入啟動成功的 Information 日誌；舊版 Central 不回傳時為 null。用途與注意事項見 [Resolve 回應的 `revision`](../knowledge/resolve-revision.md)。
 
 缺少的設定鍵（Missing Key）不會使 Resolve 失敗。用戶端套件在驗證完整回應之後，才決定必要或後備行為。
 
@@ -482,6 +495,8 @@ CREATE TABLE ConfigurationEntryVersions (
     Operation            TEXT NOT NULL CHECK (Operation IN ('Set', 'Remove')),
     Value                TEXT NULL,
     CreatedAtUtc         TEXT NOT NULL,
+    ChangedBy            TEXT NOT NULL,
+    Reason               TEXT NULL,
     CONSTRAINT FK_ConfigurationEntryVersions_Entry
         FOREIGN KEY (ConfigurationEntryId)
         REFERENCES ConfigurationEntries (Id),
@@ -498,7 +513,7 @@ CREATE INDEX IX_ConfigurationEntryVersions_Latest
     ON ConfigurationEntryVersions (ConfigurationEntryId, Version DESC);
 ```
 
-上述 SQL 為 POC 的邏輯結構描述；實作可以調整引號或 DDL 的組織方式，但不得改變條件約束。`ORDINAL_IGNORE_CASE` 是第 3.1 節所述、在連線上註冊的定序規則。UTC 時間戳記使用可往返轉換的 ISO 8601 文字表示。版本 1 之後的結構描述移轉已延後（Deferred）；既有結構描述若不相容，啟動即失敗，不會猜測或悄悄改寫。
+上述 SQL 為 POC 的邏輯結構描述；實作可以調整引號或 DDL 的組織方式，但不得改變條件約束。`ORDINAL_IGNORE_CASE` 是第 3.1 節所述、在連線上註冊的定序規則。UTC 時間戳記使用可往返轉換的 ISO 8601 文字表示。版本 1 之後的結構描述移轉已延後（Deferred）；既有結構描述若不相容，啟動即失敗，不會猜測或悄悄改寫。`ChangedBy` 與 `Reason`（POC-063）直接加入結構描述版本 1，不提供移轉；2026-10-22 之前建立的本機資料庫缺少這兩欄，Central 會以不相容的結構描述拒絕啟動，刪除資料庫檔案後重新建立即可。
 
 ### 6.3 寫入交易與順序
 
@@ -647,6 +662,7 @@ Resolved:    https://internal.example/config-center/api/v1/distribution/configur
 `200 OK` 回應符合下列任何情況時，套件會將其視為無效而拒絕：
 
 - 無法反序列化為預期的版本化 DTO 形狀；
+- `revision` 出現超過一次，或不是長度 1 至 128、只含可見 ASCII 字元的字串；
 - 包含 null 值或 UTF-8 大小超過 16 KiB 的值；
 - 包含未要求的設定鍵；
 - 要求中的某個設定鍵在兩個集合中都未出現；
@@ -779,7 +795,7 @@ POC 失敗對應如下：
 
 提供啟動日誌記錄器時，套件會嘗試發出下列結構化且不洩漏設定值的日誌：
 
-- 成功載入後發出一次 Information 摘要，包含數量、嘗試次數與經過時間；
+- 成功載入後發出一次 Information 摘要，包含數量、嘗試次數、經過時間，以及 Central 回傳的 `Revision`（可為 null）；
 - 每次排程重試時發出一次 Warning，包含嘗試次數、安全分類、選擇性的狀態、延遲，以及該次回應可為 null 的 `CentralErrorCode` 與 `CentralTraceId`；
 - 成功回應含有不認識的最上層成員時，發出一次 Warning，`UnknownResponseMembers` 只列成員名稱（第 8.2 節）；以及
 - 在擲出最終 `CentralConfigLoadException` 前，立即發出一次 Error。

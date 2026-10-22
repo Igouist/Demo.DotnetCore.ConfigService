@@ -96,7 +96,7 @@ tests/
 
 `StartupConsoleLogger` 是呼叫端擁有的 `ILogger`，只在註冊期間傳給用戶端。它為每個用戶端生命週期事件向標準錯誤寫入一筆以換行分隔的 JSON 記錄。每筆記錄都有 `"source":"demo-central-config"`，並且恰好使用下列其中一組屬性（JSON 屬性順序不屬於契約）：
 
-- `loaded`：`source`、`event`、`valueCount`、`missingFallbackKeyCount`、`attemptCount`、`elapsedMs`；
+- `loaded`：`source`、`event`、`valueCount`、`missingFallbackKeyCount`、`attemptCount`、`elapsedMs`、可為 null 的 `revision`；
 - `retry`：`source`、`event`、`attemptCount`、`failureKind`、可為 null 的 `httpStatusCode`、`delayMs`、可為 null 的 `centralErrorCode` 與 `centralTraceId`；
 - `unknown-response-members`：`source`、`event`、`unknownResponseMembers`（Central 回應中此用戶端版本不認識的最上層欄位名稱，見 [ADR-0003](../adr/0003-tolerant-client-strict-central-requests.md)）；以及
 - `failed`：`source`、`event`、`failureKind`、`attemptCount`、可為 null 的 `httpStatusCode`、`elapsedMs`、`missingRequiredKeys`、可為 null 的 `centralErrorCode` 與 `centralTraceId`。

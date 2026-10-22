@@ -90,11 +90,11 @@ public sealed class StrictJsonRequestReaderTests
     public async Task ReadRequiredAsync_deserializes_a_valid_set_request()
     {
         var result = await CreateReader().ReadRequiredAsync<SetConfigurationRequest>(
-            CreateRequest("{\"environment\":\"UAT\",\"key\":\"Demo:Message\",\"value\":\"x\"}"),
+            CreateRequest("{\"environment\":\"UAT\",\"key\":\"Demo:Message\",\"value\":\"x\",\"changedBy\":\"alice\"}"),
             AllowedRequestMembers.Set,
             CancellationToken.None);
 
-        Assert.Equal(new SetConfigurationRequest("UAT", "Demo:Message", "x"), result);
+        Assert.Equal(new SetConfigurationRequest("UAT", "Demo:Message", "x", "alice", null), result);
     }
 
     private static StrictJsonRequestReader CreateReader() =>

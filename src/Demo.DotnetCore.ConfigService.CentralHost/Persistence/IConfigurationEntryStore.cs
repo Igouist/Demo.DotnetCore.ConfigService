@@ -22,11 +22,13 @@ internal interface IConfigurationEntryStore
     Task<ConfigurationCommandReceipt> SetAsync(
         ConfigurationEntryIdentity identity,
         string value,
+        ChangeAttribution attribution,
         DateTimeOffset createdAtUtc,
         CancellationToken cancellationToken);
 
     Task<RemoveStoreResult> RemoveAsync(
         ConfigurationEntryIdentity identity,
+        ChangeAttribution attribution,
         DateTimeOffset createdAtUtc,
         CancellationToken cancellationToken);
 }

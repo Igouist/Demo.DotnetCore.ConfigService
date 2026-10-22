@@ -84,7 +84,7 @@ public sealed class ProblemDetailsContractTests
                    client,
                    SetPath,
                    """
-                   {"environment":" ","key":"CentralConfig:Reserved","value":null}
+                   {"environment":" ","key":"CentralConfig:Reserved","value":null,"changedBy":"test-author"}
                    """))
         {
             await AssertProblemAsync(
@@ -111,7 +111,7 @@ public sealed class ProblemDetailsContractTests
                    client,
                    SetPath,
                    """
-                   {"environment":"UAT","key":"Demo:SemanticProbe","value":null}
+                   {"environment":"UAT","key":"Demo:SemanticProbe","value":null,"changedBy":"test-author"}
                    """))
         {
             await AssertProblemAsync(
@@ -222,7 +222,7 @@ public sealed class ProblemDetailsContractTests
             client,
             RemovePath,
             """
-            {"environment":"UAT","key":"Demo:NeverCreated"}
+            {"environment":"UAT","key":"Demo:NeverCreated","changedBy":"test-author"}
             """);
         await AssertProblemAsync(
             remove,
@@ -242,7 +242,7 @@ public sealed class ProblemDetailsContractTests
                    client,
                    SetPath,
                    """
-                   {"environment":"UAT","key":"Demo:RepeatedRemove","value":"central-value"}
+                   {"environment":"UAT","key":"Demo:RepeatedRemove","value":"central-value","changedBy":"test-author"}
                    """))
         {
             Assert.Equal(HttpStatusCode.Created, set.StatusCode);
@@ -252,7 +252,7 @@ public sealed class ProblemDetailsContractTests
                    client,
                    RemovePath,
                    """
-                   {"environment":"UAT","key":"Demo:RepeatedRemove"}
+                   {"environment":"UAT","key":"Demo:RepeatedRemove","changedBy":"test-author"}
                    """))
         {
             Assert.Equal(HttpStatusCode.Created, remove.StatusCode);
@@ -262,7 +262,7 @@ public sealed class ProblemDetailsContractTests
             client,
             RemovePath,
             """
-            {"environment":"UAT","key":"Demo:RepeatedRemove"}
+            {"environment":"UAT","key":"Demo:RepeatedRemove","changedBy":"test-author"}
             """);
         await AssertProblemAsync(
             repeatedRemove,
@@ -285,7 +285,7 @@ public sealed class ProblemDetailsContractTests
             client,
             SetPath,
             """
-            {"environment":"UAT","key":"Demo:Busy","value":"configuration-value-sentinel"}
+            {"environment":"UAT","key":"Demo:Busy","value":"configuration-value-sentinel","changedBy":"test-author"}
             """);
 
         var problem = await AssertProblemAsync(
@@ -318,7 +318,7 @@ public sealed class ProblemDetailsContractTests
             client,
             SetPath,
             """
-            {"environment":"UAT","key":"Demo:PersistenceFailure","value":"configuration-value-sentinel"}
+            {"environment":"UAT","key":"Demo:PersistenceFailure","value":"configuration-value-sentinel","changedBy":"test-author"}
             """);
 
         var problem = await AssertProblemAsync(
@@ -356,7 +356,7 @@ public sealed class ProblemDetailsContractTests
             client,
             $"{SetPath}?query-sentinel=query-value-sentinel",
             """
-            {"environment":"UAT","key":"Demo:BodySentinel","value":"configuration-value-sentinel"}
+            {"environment":"UAT","key":"Demo:BodySentinel","value":"configuration-value-sentinel","changedBy":"test-author"}
             """);
 
         var problem = await AssertProblemAsync(
@@ -765,12 +765,14 @@ public sealed class ProblemDetailsContractTests
         public Task<ConfigurationCommandReceipt> SetAsync(
             ConfigurationEntryIdentity identity,
             string value,
+            ChangeAttribution attribution,
             DateTimeOffset createdAtUtc,
             CancellationToken cancellationToken) =>
             Task.FromException<ConfigurationCommandReceipt>(_exception);
 
         public Task<RemoveStoreResult> RemoveAsync(
             ConfigurationEntryIdentity identity,
+            ChangeAttribution attribution,
             DateTimeOffset createdAtUtc,
             CancellationToken cancellationToken) =>
             Task.FromException<RemoveStoreResult>(_exception);

@@ -4,4 +4,5 @@ internal sealed record ResolveConfigurationsRequest(string? Environment, string?
 
 internal sealed record ResolveConfigurationsResponse(
     IReadOnlyDictionary<string, string> Values,
-    IReadOnlyList<string> MissingKeys);
+    IReadOnlyList<string> MissingKeys,
+    string Revision);

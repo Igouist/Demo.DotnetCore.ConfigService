@@ -78,8 +78,8 @@
 | POC-059 | 已接受（Accepted） | 以 PowerShell 腳本一次啟動 HTTP 演示 |
 | POC-060 | 已接受（Accepted） | 移除完整示範手冊 |
 | POC-061 | 已接受（Accepted） | Central 一律提供 OpenAPI 文件與 Swagger UI |
-| POC-062 | 已接受（Accepted），待實作 | Resolve 回應加上依請求設定鍵計算的 `revision` |
-| POC-063 | 已接受（Accepted），待實作 | 項目版本記錄 `changedBy` 與 `reason` |
+| POC-062 | 已接受（Accepted） | Resolve 回應加上依請求設定鍵計算的 `revision` |
+| POC-063 | 已接受（Accepted） | 項目版本記錄 `changedBy` 與 `reason` |
 | POC-064 | 已接受（Accepted），待實作 | 管理介面要求共用的 API Key |
 
 ## 決策
@@ -351,7 +351,7 @@ Resolve 使用 POST，讓中央環境與可能較長的設定鍵清單能放在�
 
 命令回應不回傳設定值。這避免將可能敏感的值不必要地複製到 Proxy、記錄與操作工具；需要明確取得值時，由管理端目前狀態查詢負責。設定鍵與中央環境的比對規則定義於 POC-028，POC-050 定義設定值大小限制，POC-051 定義要求驗證責任，POC-052 定義 Problem Details 錯誤承載資料，POC-053 則刻意不在 POC 加入其他由應用程式定義的大小限制。
 
-**修訂 — 2026-10-22（待實作）：** POC-063 讓 Set 與 Remove 接受必填的 `changedBy` 與選填的 `reason`，並在歷史紀錄回應中回傳。
+**修訂 — 2026-10-22：** POC-063 讓 Set 與 Remove 接受必填的 `changedBy` 與選填的 `reason`，並在歷史紀錄回應中回傳。
 
 ### POC-026 — 最小化的設定分發批次契約
 
@@ -370,7 +370,7 @@ Resolve 使用 POST，讓中央環境與可能較長的設定鍵清單能放在�
 
 包含逐鍵狀態的項目陣列回應已延後，因為 POC 沒有逐鍵回應中繼資料。值字典能更直接對應到 .NET 設定提供者，也讓跨框架的 HTTP 介面更精簡。
 
-**修訂 — 2026-10-22（待實作）：** POC-062 在回應加上 `revision`，作為最後已知可用快取、輪詢與事後追查的共同基礎。逐鍵版本號與時間戳記仍不回傳；值字典與 `missingKeys` 的語意不變。[ADR-0003](../adr/0003-tolerant-client-strict-central-requests.md) 讓 Client 容忍新增的回應欄位。
+**修訂 — 2026-10-22：** POC-062 在回應加上 `revision`，作為最後已知可用快取、輪詢與事後追查的共同基礎。逐鍵版本號與時間戳記仍不回傳；值字典與 `missingKeys` 的語意不變。[ADR-0003](../adr/0003-tolerant-client-strict-central-requests.md) 讓 Client 容忍新增的回應欄位。
 
 ### POC-027 — 管理端目前狀態與歷史紀錄契約
 
@@ -384,7 +384,7 @@ Resolve 使用 POST，讓中央環境與可能較長的設定鍵清單能放在�
 
 本 POC 不將歷史紀錄分頁。這些管理回應會提供實際值，供明確的管理與診斷使用；由於 POC-040 刻意排除身分驗證、授權與傳輸安全設計，POC 必須使用非敏感示範值。POC-039 仍規範不洩漏設定值的診斷與記錄。依 POC-026，設定分發刻意不包含歷史紀錄。
 
-**修訂 — 2026-10-22（待實作）：** POC-063 讓 Set 與 Remove 接受必填的 `changedBy` 與選填的 `reason`，並在歷史紀錄回應中回傳。
+**修訂 — 2026-10-22：** POC-063 讓 Set 與 Remove 接受必填的 `changedBy` 與選填的 `reason`，並在歷史紀錄回應中回傳。
 
 ### POC-028 — 不區分大小寫的設定項目識別與標準顯示拼寫
 
@@ -980,7 +980,7 @@ HTTP 演示原本要開三個終端機，依序啟動 Central、Demo A、Demo B�
 
 ### POC-062 — Resolve 回應加上依請求設定鍵計算的 `revision`
 
-**狀態：** 已接受（Accepted），待實作（[#21](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/21)）
+**狀態：** 已接受（Accepted），由 [#21](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/21) 實作
 
 **日期：** 2026-10-22
 
@@ -993,11 +993,11 @@ POC-026 讓 Resolve 只回傳值與缺少的設定鍵，理由是 POC 只在啟�
 - **這一步的用途：** Client 把 `revision` 寫進啟動成功的 Information 日誌。指紋是單向的，Central 在 Resolve 時把 `revision` 與每個設定鍵的版本號寫進自己的日誌並附上 `traceId`，需要追查時用這筆對照查歷史紀錄。
 - **指紋不同不一定代表值變了：** 服務要求的設定鍵改變，或有人 Set 了相同的值（POC-023 每次 Set 都新增版本），都會改變 `revision`。正確的解讀是「這次拿到的設定或要求的設定鍵與上次不同，值得查一下」。
 
-使用場景、計算方式與注意事項在實作時寫成 `docs/knowledge/resolve-revision.md`。前置條件是 [ADR-0003](../adr/0003-tolerant-client-strict-central-requests.md)：在 Client 容忍未知回應欄位之前加上此欄位，現有 Client 會啟動失敗。設計文件第 4.6 節於實作時同步修訂。
+使用場景、計算方式與注意事項見 [Resolve 回應的 `revision`](../knowledge/resolve-revision.md)。實作時確定的細節：計算輸入是中央環境與 `[設定鍵, 版本號]` 的 JSON 陣列（統一為不變文化特性大寫，避免含分隔字元的設定鍵混淆），取 SHA-256 前 12 個位元組的小寫十六進位，前綴 `r1-`。前置條件是 [ADR-0003](../adr/0003-tolerant-client-strict-central-requests.md)：在 Client 容忍未知回應欄位之前加上此欄位，現有 Client 會啟動失敗。設計文件第 4.6、8.2、9.3 節已同步修訂。
 
 ### POC-063 — 項目版本記錄 `changedBy` 與 `reason`
 
-**狀態：** 已接受（Accepted），待實作（[#22](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/22)）
+**狀態：** 已接受（Accepted），由 [#22](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/22) 實作
 
 **日期：** 2026-10-22
 
@@ -1005,11 +1005,11 @@ POC-026 讓 Resolve 只回傳值與缺少的設定鍵，理由是 POC 只在啟�
 
 - **Set 與 Remove 都接受：** `changedBy` 必填，`reason` 選填。所有現有的 Set／Remove 呼叫（演示、測試、E2E）一併補上 `changedBy`。
 - **自填，不是驗證過的身分：** 在沒有登入機制前，`changedBy` 由呼叫端在請求本文自行填寫，只是自我申報的文字。POC-064 使用共用金鑰，無法區分人員，因此不由金鑰帶入。未來管理工具有登入機制或串接現有 AD 時，改由伺服器端依登入身分自動帶入人員資訊。
-- **欄位限制：** 設定長度上限、去除前後空白並拒絕控制字元。兩個欄位會出現在歷史紀錄回應中，不得放入機密。
+- **欄位限制：** 去除前後空白後，`changedBy` 最多 100 個字元、`reason` 最多 500 個字元，兩者都拒絕控制字元（包括換行）；只含空白的 `reason` 視為未填。兩個欄位會出現在歷史紀錄回應中，不得放入機密。
 - **回傳位置：** 歷史紀錄的每個版本回傳兩個欄位；目前狀態端點是否回傳最後變更者，之後再決定。
 - **直接修改結構描述 v1：** 目前沒有需要保留的正式資料，本機演示資料庫刪除重建，不撰寫移轉。
 
-設計文件第 4.1、4.2、4.4、6.2 節於實作時同步修訂。
+設計文件第 4.1、4.2、4.4、6.2 節已同步修訂。實作把「由誰填入」與欄位本身分開：控制器從請求本文建立 `ChangeAttribution`，未來改由登入身分建立時，儲存與回應形狀不變。
 
 ### POC-064 — 管理介面要求共用的 API Key
 

@@ -8,6 +8,8 @@
 @demoBUrl = http://127.0.0.1:5182
 @demoCUrl = http://127.0.0.1:5183
 @centralEnvironment = HttpDemo
+# 寫入請求的 changedBy 是自行填寫的變更者，不是驗證過的身分；可改成你的名字。
+@changedBy = demo-presenter
 
 ### 01. 確認中央服務已就緒
 # 預期：200，status 為 ready。先確認這是你這次啟動的 Central。
@@ -23,7 +25,9 @@ Accept: application/json
 {
   "environment": "{{centralEnvironment}}",
   "key": "Demo:CentralRequiredMessage",
-  "value": "snapshot-v1"
+  "value": "snapshot-v1",
+  "changedBy": "{{changedBy}}",
+  "reason": "建立第一版"
 }
 
 ### 03. 查詢中央目前值
@@ -34,6 +38,7 @@ Accept: application/json
 ### 04. 查看 Client 啟動時使用的分發介面
 # 預期：200，values 包含必要鍵的 snapshot-v1。
 # missingKeys 包含 Demo:FallbackAllowedMessage；後備值由 Client／本機設定決定。
+# revision 是這組設定鍵目前版本的指紋，與 Demo 啟動日誌 loaded 標記的 revision 相同；Set 之後再送一次會改變。
 POST {{centralUrl}}/api/v1/distribution/configurations/resolve
 Content-Type: application/json
 Accept: application/json
@@ -67,7 +72,9 @@ Accept: application/json
 {
   "environment": "{{centralEnvironment}}",
   "key": "Demo:CentralRequiredMessage",
-  "value": "snapshot-v2"
+  "value": "snapshot-v2",
+  "changedBy": "{{changedBy}}",
+  "reason": "更新為第二版"
 }
 
 ### 08. 確認中央已更新
@@ -98,7 +105,9 @@ Accept: application/json
 
 {
   "environment": "{{centralEnvironment}}",
-  "key": "Demo:CentralRequiredMessage"
+  "key": "Demo:CentralRequiredMessage",
+  "changedBy": "{{changedBy}}",
+  "reason": "示範必要值缺少時的啟動失敗"
 }
 
 ### 13. 查詢已移除的目前狀態
@@ -107,7 +116,7 @@ GET {{centralUrl}}/api/v1/management/configurations/current?environment={{centra
 Accept: application/json
 
 ### 14. 查看附加式版本歷史
-# 預期：200，versions 由新到舊排列：3 Remove、2 Set、1 Set。
+# 預期：200，versions 由新到舊排列：3 Remove、2 Set、1 Set；每個版本都有 changedBy 與 reason。
 GET {{centralUrl}}/api/v1/management/configurations/history?environment={{centralEnvironment}}&key=Demo%3ACentralRequiredMessage
 Accept: application/json
 
@@ -129,7 +138,9 @@ Accept: application/json
 {
   "environment": "{{centralEnvironment}}",
   "key": "Demo:CentralRequiredMessage",
-  "value": "snapshot-v3"
+  "value": "snapshot-v3",
+  "changedBy": "{{changedBy}}",
+  "reason": "還原設定值"
 }
 
 ### 17. 暫停：再次啟動 Demo A，確認還原結果

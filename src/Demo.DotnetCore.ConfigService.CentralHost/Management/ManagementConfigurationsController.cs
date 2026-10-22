@@ -48,10 +48,10 @@ public sealed class ManagementConfigurationsController : ControllerBase
     [HttpPost("set")]
     [JsonRequestBody(
         typeof(SetConfigurationRequest),
-        """{ "environment": "UAT", "key": "Demo:Message", "value": "central-value" }""")]
+        """{ "environment": "UAT", "key": "Demo:Message", "value": "central-value", "changedBy": "alice", "reason": "示範：更新歡迎訊息" }""")]
     [SwaggerOperation(
         Summary = "寫入設定值（Set）",
-        Description = "在中央環境寫入設定鍵的值，每次都附加一個新版本，即使值相同也一樣。`value` 必填，可為空字串，最多 16 KiB。回應不包含設定值。已經啟動的使用端不會收到新值，重新啟動後才會取得。")]
+        Description = "在中央環境寫入設定鍵的值，每次都附加一個新版本，即使值相同也一樣。`value` 必填，可為空字串，最多 16 KiB。" + OpenApiDescriptions.ChangeAttribution + "回應不包含設定值。已經啟動的使用端不會收到新值，重新啟動後才會取得。")]
     [SwaggerResponse(StatusCodes.Status201Created, "已附加新版本，`state` 為 `Present`。", typeof(ConfigurationCommandResponse), OpenApiDescriptions.Json)]
     [SwaggerResponse(StatusCodes.Status400BadRequest, OpenApiDescriptions.ValidationFailed, typeof(ProblemDetails), OpenApiDescriptions.Problem)]
     [SwaggerResponse(StatusCodes.Status500InternalServerError, OpenApiDescriptions.ServerError, typeof(ProblemDetails), OpenApiDescriptions.Problem)]
@@ -68,6 +68,7 @@ public sealed class ManagementConfigurationsController : ControllerBase
             EnvironmentName.FromValidated(request.Environment!),
             ConfigurationKey.FromValidated(request.Key!),
             request.Value!,
+            ChangeAttribution.FromValidated(request.ChangedBy, request.Reason),
             cancellationToken);
 
         return StatusCode(
@@ -83,10 +84,10 @@ public sealed class ManagementConfigurationsController : ControllerBase
     [HttpPost("remove")]
     [JsonRequestBody(
         typeof(RemoveConfigurationRequest),
-        """{ "environment": "UAT", "key": "Demo:Message" }""")]
+        """{ "environment": "UAT", "key": "Demo:Message", "changedBy": "alice", "reason": "示範：不再使用" }""")]
     [SwaggerOperation(
         Summary = "移除設定值（Remove）",
-        Description = "把設定鍵標示為已移除：附加一個值為 `null` 的新版本，歷史不會被刪除。請求不可帶 `value`。之後再 Set 同一個設定鍵可以恢復。")]
+        Description = "把設定鍵標示為已移除：附加一個值為 `null` 的新版本，歷史不會被刪除。請求不可帶 `value`。" + OpenApiDescriptions.ChangeAttribution + "之後再 Set 同一個設定鍵可以恢復。")]
     [SwaggerResponse(StatusCodes.Status201Created, "已附加移除版本，`state` 為 `Removed`。", typeof(ConfigurationCommandResponse), OpenApiDescriptions.Json)]
     [SwaggerResponse(StatusCodes.Status400BadRequest, OpenApiDescriptions.ValidationFailed, typeof(ProblemDetails), OpenApiDescriptions.Problem)]
     [SwaggerResponse(StatusCodes.Status404NotFound, OpenApiDescriptions.NotFound, typeof(ProblemDetails), OpenApiDescriptions.Problem)]
@@ -104,6 +105,7 @@ public sealed class ManagementConfigurationsController : ControllerBase
         var receipt = await _dependencies.Module.RemoveAsync(
             EnvironmentName.FromValidated(request.Environment!),
             ConfigurationKey.FromValidated(request.Key!),
+            ChangeAttribution.FromValidated(request.ChangedBy, request.Reason),
             cancellationToken);
 
         return StatusCode(
@@ -179,7 +181,7 @@ public sealed class ManagementConfigurationsController : ControllerBase
     [HttpGet("history")]
     [SwaggerOperation(
         Summary = "查詢版本歷史",
-        Description = "回傳設定鍵的所有版本，由新到舊排列，包含每次 Set 的值與 Remove 的紀錄。")]
+        Description = "回傳設定鍵的所有版本，由新到舊排列，包含每次 Set 的值與 Remove 的紀錄，以及每個版本的 `changedBy` 與 `reason`（未填為 `null`）。")]
     [SwaggerResponse(StatusCodes.Status200OK, "由新到舊的版本清單。", typeof(ConfigurationHistoryResponse), OpenApiDescriptions.Json)]
     [SwaggerResponse(StatusCodes.Status400BadRequest, OpenApiDescriptions.ValidationFailed, typeof(ProblemDetails), OpenApiDescriptions.Problem)]
     [SwaggerResponse(StatusCodes.Status404NotFound, OpenApiDescriptions.NotFound, typeof(ProblemDetails), OpenApiDescriptions.Problem)]
@@ -202,7 +204,9 @@ public sealed class ManagementConfigurationsController : ControllerBase
                 version.Version,
                 version.Operation,
                 version.Value,
-                version.CreatedAtUtc))
+                version.CreatedAtUtc,
+                version.Attribution.ChangedBy,
+                version.Attribution.Reason))
             .ToArray();
 
         return Ok(new ConfigurationHistoryResponse(

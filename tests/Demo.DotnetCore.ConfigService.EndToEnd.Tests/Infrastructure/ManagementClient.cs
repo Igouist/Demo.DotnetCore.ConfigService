@@ -10,6 +10,7 @@ internal sealed class ManagementClient : IDisposable
     private const string RemoveRoute = "/api/v1/management/configurations/remove";
     private const string CurrentRoute = "/api/v1/management/configurations/current";
     private const string HistoryRoute = "/api/v1/management/configurations/history";
+    internal const string ChangedBy = "e2e-tests";
     private static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(10);
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
     private readonly HttpClient httpClient;
@@ -52,7 +53,7 @@ internal sealed class ManagementClient : IDisposable
         CancellationToken cancellationToken = default) =>
         await PostAsync(
             SetRoute,
-            new SetConfigurationRequest(environment, key, value),
+            new SetConfigurationRequest(environment, key, value, ChangedBy),
             cancellationToken);
 
     internal async Task<ManagementCommandResponse> RemoveAsync(
@@ -61,7 +62,7 @@ internal sealed class ManagementClient : IDisposable
         CancellationToken cancellationToken = default) =>
         await PostAsync(
             RemoveRoute,
-            new RemoveConfigurationRequest(environment, key),
+            new RemoveConfigurationRequest(environment, key, ChangedBy),
             cancellationToken);
 
     internal Task<CurrentConfigurationResponse> GetCurrentAsync(

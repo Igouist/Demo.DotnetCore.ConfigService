@@ -35,7 +35,8 @@ internal sealed record ConfigurationVersion(
     long Version,
     ConfigurationOperation Operation,
     string? Value,
-    DateTimeOffset CreatedAtUtc);
+    DateTimeOffset CreatedAtUtc,
+    ChangeAttribution Attribution);
 
 internal sealed record ConfigurationHistory(
     EnvironmentName Environment,
@@ -50,9 +51,14 @@ internal sealed record ConfigurationEntrySummary(
 
 internal sealed record StoredResolution(
     ConfigurationKey Key,
+    long Version,
     ConfigurationEntryState State,
     string? Value);
 
 internal sealed record ConfigurationResolution(
     IReadOnlyDictionary<string, string> Values,
-    IReadOnlyList<string> MissingKeys);
+    IReadOnlyList<string> MissingKeys,
+    string Revision,
+    IReadOnlyList<ResolvedKeyVersion> KeyVersions);
+
+internal sealed record ResolvedKeyVersion(string Key, long Version);
