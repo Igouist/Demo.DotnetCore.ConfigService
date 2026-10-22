@@ -73,27 +73,27 @@
 - [#16](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/16)：移除完整示範手冊，理由見決策紀錄 POC-060。它獨有的兩項內容移到新位置：設定來源優先序的人工展示成為 [HTTP 操作說明](docs/demo/http-demo-guide.md)第 5 節（選用，另啟動 Demo C 於 `5183`，`.http` 新增附錄 B；原附錄改名附錄 A），使用端引用套件的方式寫進 [Client 使用說明](src/Demo.DotnetCore.ConfigService.Client/README.md)的「引用套件」。README、短入門導讀與 Demo／E2E 規格第 10 節同步修訂。
 - 驗證（Linux、PowerShell 7.6、SDK 10.0.113）：以啟動腳本執行 Central，照第 5 節的指令在另一個終端機啟動 Demo C，有效設定依序為 `environment-value`、`command-value`，中央值不變，移除環境變數後 `Test-Path` 為 `False`。照「引用套件」的步驟在儲存庫外封裝並建立一個 `net8.0` 使用端，還原、建置並連到 Central，取得中央值。README「完整驗證」全部通過：format 無變更、Release build 0 warning；CentralHost.Tests 192、Client.Tests 189、DemoHost.Tests 12、EndToEnd.Tests 130。
 
-### PR #19（已合併，合併提交 `0dfac79`）
+### PR #19（已合併，合併提交 `480375a`）
 
 - [#13](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/13)：Central 以 Swashbuckle 10.3.0（`SwaggerGen`、`SwaggerUI`、`Annotations`）提供 OpenAPI 文件 `/swagger/v1/swagger.json` 與 Swagger UI `/swagger`，一律開啟、不列入 `/health/ready`，取捨見決策紀錄 POC-061。控制器不使用模型繫結，所以 Set、Remove、Resolve 以 `JsonRequestBody` 屬性標示請求型別與範例（中央環境 `UAT`），由 `JsonRequestBodyOperationFilter` 寫入文件；以 Swashbuckle 標註屬性（`SwaggerOperation`、`SwaggerParameter`、`SwaggerResponse`、`SwaggerTag`）提供中文摘要、參數與回應說明，共用文字在 `OpenApiDescriptions`，回應標示成功的 `application/json` 與錯誤的 `application/problem+json`。既有端點行為不變。README、HTTP 操作說明第 4 節與設計文件第 4 節開頭已提及網址。
 - 驗證（Linux、SDK 10.0.113）：README「完整驗證」全部通過，format 無變更、Release build 0 warning；CentralHost.Tests 200（新增 `OpenApiDocumentTests` 8 個）、Client.Tests 189、DemoHost.Tests 12、EndToEnd.Tests 130。另以真正的 Central 程序（`127.0.0.1:5180`）與 Playwright 操作 Swagger UI，依序對 Set、current、history、列表、Resolve、Remove 按「Try it out」與「Execute」，回應均符合設計文件第 4 節，頁面顯示各端點的中文摘要與說明。
 
-### #20 回應相容性（PR 審查中）
+### PR #25：#20 回應相容性（已合併，合併提交 `e155d62`）
 
 - [#20](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/20)：依 [ADR-0003](docs/adr/0003-tolerant-client-strict-central-requests.md)，Client 略過 Resolve 回應中不認識的最上層欄位，啟動照常完成，並發出一筆只列欄位名稱的 Warning（`UnknownResponseMembers`）提醒升級套件；`values`／`missingKeys` 的格式、重複與分割規則不變，Central 對請求仍以 `unknown_property` 嚴格拒絕。Demo 把這筆 Warning 輸出成 `unknown-response-members` 標記。設計文件第 8.2、9.3 節與第 15 節第 9 點、Demo／E2E 規格第 4 節標記清單與 Client README 已同步。
 - 驗證（Linux、SDK 10.0.113）：README「完整驗證」全部通過，format 無變更、Release build 0 warning；CentralHost.Tests 200、Client.Tests 196、DemoHost.Tests 13、EndToEnd.Tests 130。
 
-### #21 Resolve 的 `revision`（PR 審查中，接在 #20 之後）
+### PR #26：#21 Resolve 的 `revision`（已合併；因合併時 base 仍是 #20 分支，實際由 PR #27 的合併提交 `6ed62a9` 帶進 master）
 
 - [#21](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/21)：依 POC-062，Resolve 回應加上 `revision`，由 Central 在讀取值的同一個交易內，依請求設定鍵的最新版本號當場計算（`r1-` 加 SHA-256 前 12 位元組的十六進位），不儲存。Central 每次 Resolve 寫一筆 Information 日誌（`TraceIdentifier`、中央環境、`Revision`、`KeyVersions`，不含值）；Client 驗證 `revision`（選填，1–128 個可見 ASCII 字元）並寫進啟動成功的 Information 日誌，Demo 的 `loaded` 標記帶出 `revision`。新增[Resolve 回應的 `revision`](docs/knowledge/resolve-revision.md)，README 與 Client README 已連結；設計文件第 4.6、8.2、9.3 節、Demo／E2E 規格與決策紀錄 POC-026／POC-062 已同步。
 - 驗證（Linux、SDK 10.0.113）：README「完整驗證」全部通過，format 無變更、Release build 0 warning；CentralHost.Tests 208、Client.Tests 205、DemoHost.Tests 13、EndToEnd.Tests 130。
 
-### #22 版本紀錄的 `changedBy`／`reason`（PR 審查中，接在 #21 之後）
+### PR #27：#22 版本紀錄的 `changedBy`／`reason`（已合併，合併提交 `6ed62a9`）
 
 - [#22](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/22)：依 POC-063，Set 與 Remove 要求必填的 `changedBy`、選填的 `reason`，去除前後空白後分別限 100、500 個字元並拒絕控制字元；歷程的每個版本回傳兩個欄位，目前狀態與列表不回傳。`changedBy` 是自行填寫的文字；Central 以 `ChangeAttribution` 承載，未來改由登入身分建立時，儲存與回應形狀不變。資料表 `ConfigurationEntryVersions` 直接在結構描述 v1 加上 `ChangedBy`、`Reason`，**舊的本機資料庫會被判定為不相容而拒絕啟動，刪除檔案重建即可**（一鍵啟動腳本預設每次使用新的暫存資料庫，不受影響）。`.http` 新增 `@changedBy` 變數並為每個寫入請求帶上原因；E2E 的管理用戶端帶 `e2e-tests`。設計文件第 4.1、4.2、4.4、6.2 節、短入門導讀、SQLite 外部工具查詢與決策紀錄已同步。
 - 驗證（Linux、SDK 10.0.113）：README「完整驗證」全部通過，format 無變更、Release build 0 warning；CentralHost.Tests 222、Client.Tests 205、DemoHost.Tests 13、EndToEnd.Tests 130。
 
-### #23 管理介面金鑰（PR 審查中，接在 #22 之後）
+### PR #28：#23 管理介面金鑰（已合併，合併提交 `72c9bec`）
 
 - [#23](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/23)：依 POC-064，整個管理介面要求 `X-Api-Key` 標頭等於設定 `ManagementApi:ApiKey`；沒帶、帶錯或重複都回相同的 `401` Problem Details（`code`: `unauthorized`），檢查在本文驗證之前。Resolve、`/health/ready` 與 `/swagger` 不受影響。以 ASP.NET Core 驗證處理常式（`ManagementApiKeyHandler`）加授權原則（`ManagementApi`）實作，金鑰雜湊後固定時間比較、不寫入日誌。示範金鑰放在 Central 的 `appsettings.Development.json`，啟動腳本與手動流程以 `--environment Development` 啟動 Central；其他環境未設定時啟動記一筆 Warning，管理介面一律 `401`。Swagger UI 有「Authorize」按鈕，OpenAPI 只在管理操作標示安全需求與 `401`。`.http` 新增 `@managementApiKey` 並在每個管理請求帶標頭；E2E 以 `ManagementApi__ApiKey` 給測試金鑰。README（新增「管理介面金鑰」）、HTTP 操作說明、設計文件第 5、11、12、13 節、Demo／E2E 規格與決策紀錄已同步。
 - 驗證（Linux、SDK 10.0.113）：README「完整驗證」全部通過，format 無變更、Release build 0 warning；CentralHost.Tests 236、Client.Tests 205、DemoHost.Tests 13、EndToEnd.Tests 130。另以真正的 Central（`Development`）與 Demo A 實測：無金鑰 Set 回 `401`、帶示範金鑰回 `201`；Resolve 不帶金鑰回 `200`，`revision` 與 Demo `loaded` 標記相同；歷程帶出 `changedBy`／`reason`；Central 日誌有 `KeyVersions`，不含金鑰與設定值。以 Playwright 在 Swagger UI 按「Authorize」輸入金鑰後執行列表，請求帶上 `X-Api-Key` 並回 `200`。`scripts/start-http-demo.ps1` 只多一個 `--environment Development` 參數，這次沒有以 PowerShell 重跑整段演示。
@@ -102,11 +102,6 @@
 
 1. [#2](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/2) 第二段與 [#11](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/11) 的 Windows 驗證：維護者在 Windows 上以 `scripts/start-http-demo.ps1` 走一次 HTTP 演示，分別用 Windows PowerShell 5.1 與 PowerShell 7；留意執行原則、系統保留的連接埠範圍、示範當天使用的 `.http` 工具，以及結束後連接埠是否釋放。
 2. [#3](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/3)：在示範會議上取得架構決策共識，結論寫回決策紀錄，再依結論開立後續 Issue。
-3. 趁有人依賴契約之前定案的四項（2026-10-22 決定並實作，四個堆疊 PR 待審查與依序合併），各 Issue 留言有完整結論：
-   - [#20](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/20)：已實作，見上方。四項依序各開一個堆疊的 PR，須依 #20 → #23 的順序合併。
-   - [#21](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/21)：已實作，見上方。
-   - [#22](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/22)：已實作，見上方。
-   - [#23](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/23)：已實作，見上方。
 
 其他待辦以 [GitHub Issues](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues) 為準，本文件不重複列出。
 
