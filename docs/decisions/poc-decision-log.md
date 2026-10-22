@@ -80,7 +80,7 @@
 | POC-061 | 已接受（Accepted） | Central 一律提供 OpenAPI 文件與 Swagger UI |
 | POC-062 | 已接受（Accepted） | Resolve 回應加上依請求設定鍵計算的 `revision` |
 | POC-063 | 已接受（Accepted） | 項目版本記錄 `changedBy` 與 `reason` |
-| POC-064 | 已接受（Accepted），待實作 | 管理介面要求共用的 API Key |
+| POC-064 | 已接受（Accepted） | 管理介面要求共用的 API Key |
 
 ## 決策
 
@@ -550,7 +550,7 @@ NuGet 套件以單一公開的 `CentralConfigLoadException` 表示每個最終�
 
 這項刻意排除的安全範圍不減弱 POC-039：設定值、認證資料、權杖與其他禁止資料，仍不得進入套件診斷或記錄。任何正式使用或儲存實際機密之前，必須先設計身分驗證、授權、傳輸安全、機密管理規則與介面專屬權限。
 
-**修訂 — 2026-10-22（待實作）：** POC-064 為管理介面加上一把共用的示範用 API Key，設定分發介面維持開放。這不是正式的身分驗證，本決策其餘的排除範圍不變。
+**修訂 — 2026-10-22：** POC-064 為管理介面加上一把共用的示範用 API Key，設定分發介面維持開放。這不是正式的身分驗證，本決策其餘的排除範圍不變。
 
 ### POC-041 — 單一中央主機執行個體與單一 SQLite 檔案的拓撲
 
@@ -1013,7 +1013,7 @@ POC-026 讓 Resolve 只回傳值與缺少的設定鍵，理由是 POC 只在啟�
 
 ### POC-064 — 管理介面要求共用的 API Key
 
-**狀態：** 已接受（Accepted），待實作（[#23](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/23)）
+**狀態：** 已接受（Accepted），由 [#23](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/23) 實作
 
 **日期：** 2026-10-22
 
@@ -1025,7 +1025,7 @@ POC-040 刻意不驗證身分，任何連得到 Central 的人都能修改設定
 - **Swagger UI 可帶標頭：** 頁面提供「Authorize」按鈕，輸入一次金鑰後，從頁面送出的管理請求都會帶上標頭。
 - **以 ASP.NET Core 驗證處理常式與授權原則實作：** 未來改接登入機制或 AD 時只需替換處理常式，呼叫端不必再大幅修改。
 
-這是過渡做法，不是正式的身分驗證；正式的驗證、授權與機密管理方向仍由 [#3](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/3) 第 4 項在示範會議上決定，因此不提升為 ADR。設計文件第 11、13 節於實作時同步修訂。
+這是過渡做法，不是正式的身分驗證；正式的驗證、授權與機密管理方向仍由 [#3](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/3) 第 4 項在示範會議上決定，因此不提升為 ADR。設計文件第 5、11、12、13 節已同步修訂。實作時確定的細節：設定鍵為 `ManagementApi:ApiKey`，示範金鑰放在 Central 的 `appsettings.Development.json`，啟動腳本以 `Development` 環境啟動 Central；`401` 的 `code` 為 `unauthorized`；重複的 `X-Api-Key` 標頭也視為無效。
 
 ## 尚未解決的設計問題
 

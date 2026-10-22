@@ -236,6 +236,7 @@ $central = New-DemoService 'Central' 'central' $CentralPort @(
     $centralDll,
     '--contentRoot', $centralProject,
     '--urls', "http://127.0.0.1:$CentralPort",
+    '--environment', 'Development',
     '--ConnectionStrings:CentralConfigDatabase', "Data Source=$demoDatabase")
 
 $demoA = New-DemoService 'Demo A' 'demo-a' $DemoAPort @(

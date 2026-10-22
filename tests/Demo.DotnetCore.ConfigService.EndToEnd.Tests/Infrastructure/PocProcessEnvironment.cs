@@ -532,7 +532,8 @@ internal sealed class PocProcessEnvironment : IAsyncDisposable
                 scenarioDirectory.Path,
                 new Dictionary<string, string>
                 {
-                    ["CentralHealth__InstanceId"] = expectedInstanceId
+                    ["CentralHealth__InstanceId"] = expectedInstanceId,
+                    ["ManagementApi__ApiKey"] = ManagementClient.ApiKey
                 });
 
         return new CentralLaunch(
@@ -710,6 +711,7 @@ internal sealed class PocProcessEnvironment : IAsyncDisposable
                             using var request = new HttpRequestMessage(
                                 HttpMethod.Get,
                                 new Uri(CentralBaseAddress, route));
+                            request.Headers.Add("X-Api-Key", ManagementClient.ApiKey);
                             using HttpResponseMessage response = await httpClient.SendAsync(
                                 request,
                                 HttpCompletionOption.ResponseHeadersRead,

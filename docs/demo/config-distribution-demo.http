@@ -10,6 +10,8 @@
 @centralEnvironment = HttpDemo
 # 寫入請求的 changedBy 是自行填寫的變更者，不是驗證過的身分；可改成你的名字。
 @changedBy = demo-presenter
+# 管理介面要求 X-Api-Key；這是演示環境（Central 的 appsettings.Development.json）內建的示範金鑰。分發介面不需要金鑰。
+@managementApiKey = demo-only-management-key-do-not-use-in-production
 
 ### 01. 確認中央服務已就緒
 # 預期：200，status 為 ready。先確認這是你這次啟動的 Central。
@@ -19,6 +21,7 @@ Accept: application/json
 ### 02. 建立第一版中央值
 # 預期：201，version 為 1，state 為 Present；命令回應不包含設定值。
 POST {{centralUrl}}/api/v1/management/configurations/set
+X-Api-Key: {{managementApiKey}}
 Content-Type: application/json
 Accept: application/json
 
@@ -33,6 +36,7 @@ Accept: application/json
 ### 03. 查詢中央目前值
 # 預期：200，value 為 snapshot-v1。
 GET {{centralUrl}}/api/v1/management/configurations/current?environment={{centralEnvironment}}&key=Demo%3ACentralRequiredMessage
+X-Api-Key: {{managementApiKey}}
 Accept: application/json
 
 ### 04. 查看 Client 啟動時使用的分發介面
@@ -66,6 +70,7 @@ Accept: application/json
 ### 07. 將中央值更新為第二版
 # 預期：201，version 為 2，state 為 Present。
 POST {{centralUrl}}/api/v1/management/configurations/set
+X-Api-Key: {{managementApiKey}}
 Content-Type: application/json
 Accept: application/json
 
@@ -80,6 +85,7 @@ Accept: application/json
 ### 08. 確認中央已更新
 # 預期：200，value 為 snapshot-v2。
 GET {{centralUrl}}/api/v1/management/configurations/current?environment={{centralEnvironment}}&key=Demo%3ACentralRequiredMessage
+X-Api-Key: {{managementApiKey}}
 Accept: application/json
 
 ### 09. 不重啟 Demo A，觀察原本的快照
@@ -100,6 +106,7 @@ Accept: application/json
 ### 12. 移除中央必要值
 # 預期：201，version 為 3，state 為 Removed。這不會實體刪除歷史。
 POST {{centralUrl}}/api/v1/management/configurations/remove
+X-Api-Key: {{managementApiKey}}
 Content-Type: application/json
 Accept: application/json
 
@@ -113,11 +120,13 @@ Accept: application/json
 ### 13. 查詢已移除的目前狀態
 # 預期：200（不是 404），state 為 Removed，value 為 null。
 GET {{centralUrl}}/api/v1/management/configurations/current?environment={{centralEnvironment}}&key=Demo%3ACentralRequiredMessage
+X-Api-Key: {{managementApiKey}}
 Accept: application/json
 
 ### 14. 查看附加式版本歷史
 # 預期：200，versions 由新到舊排列：3 Remove、2 Set、1 Set；每個版本都有 changedBy 與 reason。
 GET {{centralUrl}}/api/v1/management/configurations/history?environment={{centralEnvironment}}&key=Demo%3ACentralRequiredMessage
+X-Api-Key: {{managementApiKey}}
 Accept: application/json
 
 ### 15. 暫停：只重啟 Demo A 並觀察啟動失敗，再執行此請求（Demo B）
@@ -132,6 +141,7 @@ Accept: application/json
 # 預期：201，version 為 4，state 為 Present。
 # snapshot-v3 是設定值的名稱，不是 Entry Version；Remove 也會占用一個版本。
 POST {{centralUrl}}/api/v1/management/configurations/set
+X-Api-Key: {{managementApiKey}}
 Content-Type: application/json
 Accept: application/json
 
@@ -152,6 +162,7 @@ Accept: application/json
 # 預期：200，configurations 只有 Demo:CentralRequiredMessage，version 為 4，state 為 Present。
 # 列表不包含設定值；已移除的設定鍵也會列出，state 為 Removed。需要值時使用 03 的 current。
 GET {{centralUrl}}/api/v1/management/configurations?environment={{centralEnvironment}}
+X-Api-Key: {{managementApiKey}}
 Accept: application/json
 
 ### 附錄 B. 查看優先序示範用的 Demo C（可選，見操作說明第 5 節）

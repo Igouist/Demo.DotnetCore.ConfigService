@@ -30,6 +30,7 @@ public sealed class ManagementClientTests
         Assert.Equal(
             "/api/v1/management/configurations/current?environment=UAT%20%26%20Blue&key=Demo%3AA%2FB%3FC",
             handler.RequestPathAndQuery);
+        Assert.Equal([ManagementClient.ApiKey], handler.ApiKeyHeaderValues);
         Assert.Equal(("UAT & Blue", "Demo:A/B?C", 7L, "Present", "current-value"),
             (response.Environment, response.Key, response.Version, response.State, response.Value));
     }
@@ -337,11 +338,14 @@ public sealed class ManagementClientTests
     {
         internal string? RequestPathAndQuery { get; private set; }
 
+        internal string[] ApiKeyHeaderValues { get; private set; } = [];
+
         protected override Task<HttpResponseMessage> SendAsync(
             HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
             RequestPathAndQuery = request.RequestUri?.PathAndQuery;
+            ApiKeyHeaderValues = request.Headers.TryGetValues("X-Api-Key", out var values) ? values.ToArray() : [];
             return Task.FromResult(createResponse(request));
         }
     }

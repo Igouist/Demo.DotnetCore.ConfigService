@@ -11,6 +11,7 @@ internal sealed class ManagementClient : IDisposable
     private const string CurrentRoute = "/api/v1/management/configurations/current";
     private const string HistoryRoute = "/api/v1/management/configurations/history";
     internal const string ChangedBy = "e2e-tests";
+    internal const string ApiKey = "e2e-management-api-key";
     private static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(10);
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
     private readonly HttpClient httpClient;
@@ -43,6 +44,7 @@ internal sealed class ManagementClient : IDisposable
             BaseAddress = centralBaseAddress,
             Timeout = Timeout.InfiniteTimeSpan
         };
+        httpClient.DefaultRequestHeaders.Add("X-Api-Key", ApiKey);
         this.requestTimeout = requestTimeout;
     }
 
