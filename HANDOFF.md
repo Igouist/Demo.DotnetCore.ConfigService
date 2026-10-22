@@ -93,17 +93,20 @@
 - [#22](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/22)：依 POC-063，Set 與 Remove 要求必填的 `changedBy`、選填的 `reason`，去除前後空白後分別限 100、500 個字元並拒絕控制字元；歷程的每個版本回傳兩個欄位，目前狀態與列表不回傳。`changedBy` 是自行填寫的文字；Central 以 `ChangeAttribution` 承載，未來改由登入身分建立時，儲存與回應形狀不變。資料表 `ConfigurationEntryVersions` 直接在結構描述 v1 加上 `ChangedBy`、`Reason`，**舊的本機資料庫會被判定為不相容而拒絕啟動，刪除檔案重建即可**（一鍵啟動腳本預設每次使用新的暫存資料庫，不受影響）。`.http` 新增 `@changedBy` 變數並為每個寫入請求帶上原因；E2E 的管理用戶端帶 `e2e-tests`。設計文件第 4.1、4.2、4.4、6.2 節、短入門導讀、SQLite 外部工具查詢與決策紀錄已同步。
 - 驗證（Linux、SDK 10.0.113）：README「完整驗證」全部通過，format 無變更、Release build 0 warning；CentralHost.Tests 222、Client.Tests 205、DemoHost.Tests 13、EndToEnd.Tests 130。
 
+### #23 管理介面金鑰（PR 審查中，接在 #22 之後）
+
+- [#23](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/23)：依 POC-064，整個管理介面要求 `X-Api-Key` 標頭等於設定 `ManagementApi:ApiKey`；沒帶、帶錯或重複都回相同的 `401` Problem Details（`code`: `unauthorized`），檢查在本文驗證之前。Resolve、`/health/ready` 與 `/swagger` 不受影響。以 ASP.NET Core 驗證處理常式（`ManagementApiKeyHandler`）加授權原則（`ManagementApi`）實作，金鑰雜湊後固定時間比較、不寫入日誌。示範金鑰放在 Central 的 `appsettings.Development.json`，啟動腳本與手動流程以 `--environment Development` 啟動 Central；其他環境未設定時啟動記一筆 Warning，管理介面一律 `401`。Swagger UI 有「Authorize」按鈕，OpenAPI 只在管理操作標示安全需求與 `401`。`.http` 新增 `@managementApiKey` 並在每個管理請求帶標頭；E2E 以 `ManagementApi__ApiKey` 給測試金鑰。README（新增「管理介面金鑰」）、HTTP 操作說明、設計文件第 5、11、12、13 節、Demo／E2E 規格與決策紀錄已同步。
+- 驗證（Linux、SDK 10.0.113）：README「完整驗證」全部通過，format 無變更、Release build 0 warning；CentralHost.Tests 236、Client.Tests 205、DemoHost.Tests 13、EndToEnd.Tests 130。另以真正的 Central（`Development`）與 Demo A 實測：無金鑰 Set 回 `401`、帶示範金鑰回 `201`；Resolve 不帶金鑰回 `200`，`revision` 與 Demo `loaded` 標記相同；歷程帶出 `changedBy`／`reason`；Central 日誌有 `KeyVersions`，不含金鑰與設定值。以 Playwright 在 Swagger UI 按「Authorize」輸入金鑰後執行列表，請求帶上 `X-Api-Key` 並回 `200`。`scripts/start-http-demo.ps1` 只多一個 `--environment Development` 參數，這次沒有以 PowerShell 重跑整段演示。
+
 ### 下一步
 
 1. [#2](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/2) 第二段與 [#11](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/11) 的 Windows 驗證：維護者在 Windows 上以 `scripts/start-http-demo.ps1` 走一次 HTTP 演示，分別用 Windows PowerShell 5.1 與 PowerShell 7；留意執行原則、系統保留的連接埠範圍、示範當天使用的 `.http` 工具，以及結束後連接埠是否釋放。
 2. [#3](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/3)：在示範會議上取得架構決策共識，結論寫回決策紀錄，再依結論開立後續 Issue。
-3. 趁有人依賴契約之前定案的四項（2026-10-22 已決定、尚未實作），各 Issue 留言有完整結論：
+3. 趁有人依賴契約之前定案的四項（2026-10-22 決定並實作，四個堆疊 PR 待審查與依序合併），各 Issue 留言有完整結論：
    - [#20](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/20)：已實作，見上方。四項依序各開一個堆疊的 PR，須依 #20 → #23 的順序合併。
    - [#21](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/21)：已實作，見上方。
    - [#22](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/22)：已實作，見上方。
-   - [#23](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/23)：管理介面要求共用的 `X-Api-Key`，Swagger UI 可帶標頭（POC-064）。
-
-   這幾項會修改設計文件；在實作完成前，設計文件與程式仍描述目前行為。
+   - [#23](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/23)：已實作，見上方。
 
 其他待辦以 [GitHub Issues](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues) 為準，本文件不重複列出。
 
