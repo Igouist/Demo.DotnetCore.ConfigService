@@ -137,6 +137,7 @@ internal sealed class SqliteConfigurationEntryStore : IConfigurationEntryStore
         SELECT
             requested.Ordinal,
             entry.ConfigurationKey,
+            latest.Version,
             latest.Operation,
             latest.Value
         FROM RequestedConfigurationKeys AS requested
@@ -732,7 +733,7 @@ internal sealed class SqliteConfigurationEntryStore : IConfigurationEntryStore
     {
         var key = ToKey(row.ConfigurationKey);
         var operation = ParseOperation(row.Operation);
-        return new StoredResolution(key, ToState(operation, row.Value), row.Value);
+        return new StoredResolution(key, row.Version, ToState(operation, row.Value), row.Value);
     }
 
     private static ConfigurationEntryIdentity ToIdentity(StoredReadVersion row) => new(

@@ -38,6 +38,7 @@ public sealed class ResilienceScenarios(PackagedDemoFixture fixture)
 
                 Assert.Equal("TransportFailure", retry.FailureKind);
                 Assert.True(loaded.AttemptCount is > 1);
+                Assert.StartsWith("r1-", loaded.Revision, StringComparison.Ordinal);
                 Assert.Equal(
                     "recovered-value",
                     (await scenario.GetEffectiveConfigurationAsync())

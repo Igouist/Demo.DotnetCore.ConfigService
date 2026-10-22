@@ -9,15 +9,17 @@ internal sealed class StartupLogEmitter(ILogger? logger)
         int valueCount,
         int missingFallbackKeyCount,
         int attemptCount,
-        TimeSpan elapsed) =>
+        TimeSpan elapsed,
+        string? revision = null) =>
         TryEmit(
             LogLevel.Information,
             target => target.LogInformation(
-                "Central configuration loaded: {ValueCount} values, {MissingFallbackKeyCount} fallback-missing keys, {AttemptCount} attempt(s), {ElapsedMs} ms.",
+                "Central configuration loaded: {ValueCount} values, {MissingFallbackKeyCount} fallback-missing keys, {AttemptCount} attempt(s), {ElapsedMs} ms, revision {Revision}.",
                 valueCount,
                 missingFallbackKeyCount,
                 attemptCount,
-                elapsed.TotalMilliseconds));
+                elapsed.TotalMilliseconds,
+                revision));
 
     internal void TryWarning(
         int attemptCount,

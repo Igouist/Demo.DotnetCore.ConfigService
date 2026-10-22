@@ -278,7 +278,8 @@ internal sealed class RetryingDistributionResolver
         return new ResolvedCentralConfig(
             validated.Values,
             missingFallbackCount,
-            attemptCount);
+            attemptCount,
+            validated.Revision);
     }
 
     private async Task WaitForRetryAsync(

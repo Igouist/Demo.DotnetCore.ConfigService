@@ -18,6 +18,7 @@ public sealed class StartupConsoleLoggerTests
             ("MissingFallbackKeyCount", 1),
             ("AttemptCount", 2),
             ("ElapsedMs", 125d),
+            ("Revision", "r1-0123456789abcdef01234567"),
             ("SecretValue", "never-serialize"));
         Emit(
             logger,
@@ -55,7 +56,9 @@ public sealed class StartupConsoleLoggerTests
         AssertMarker(
             lines[0],
             "loaded",
-            "source", "event", "valueCount", "missingFallbackKeyCount", "attemptCount", "elapsedMs");
+            "source", "event", "valueCount", "missingFallbackKeyCount", "attemptCount", "elapsedMs", "revision");
+        using JsonDocument loaded = JsonDocument.Parse(lines[0]);
+        Assert.Equal("r1-0123456789abcdef01234567", loaded.RootElement.GetProperty("revision").GetString());
         AssertMarker(
             lines[1],
             "retry",

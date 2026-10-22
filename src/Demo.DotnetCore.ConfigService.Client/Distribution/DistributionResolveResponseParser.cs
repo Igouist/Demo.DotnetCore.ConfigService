@@ -31,6 +31,8 @@ internal sealed class DistributionResponseParser : IDistributionResponseParser
 
 internal static class DistributionResolveResponseParser
 {
+    internal const int MaxRevisionLength = 128;
+
     internal static bool TryParseAndValidate(
         ReadOnlyMemory<byte> utf8Json,
         KeySelection requestedSelection,
@@ -47,9 +49,11 @@ internal static class DistributionResolveResponseParser
                     document.RootElement,
                     out JsonElement valuesElement,
                     out JsonElement missingElement,
+                    out JsonElement? revisionElement,
                     out IReadOnlyList<string> unknownMembers)
                 || !TryReadValues(valuesElement, out Dictionary<string, string> values)
                 || !TryReadMissingKeys(missingElement, out HashSet<string> missingKeys)
+                || !TryReadRevision(revisionElement, out string? revision)
                 || values.Keys.Any(key => !requestedSelection.Contains(key))
                 || missingKeys.Any(key => !requestedSelection.Contains(key)))
             {
@@ -66,7 +70,7 @@ internal static class DistributionResolveResponseParser
                 }
             }
 
-            response = new ValidatedDistributionResponse(values, missingKeys, unknownMembers);
+            response = new ValidatedDistributionResponse(values, missingKeys, unknownMembers, revision);
             return true;
         }
         catch (JsonException)
@@ -79,10 +83,12 @@ internal static class DistributionResolveResponseParser
         JsonElement root,
         out JsonElement values,
         out JsonElement missingKeys,
+        out JsonElement? revision,
         out IReadOnlyList<string> unknownMembers)
     {
         values = default;
         missingKeys = default;
+        revision = null;
         var unknown = new List<string>();
         unknownMembers = unknown;
         bool sawValues = false;
@@ -110,6 +116,15 @@ internal static class DistributionResolveResponseParser
                 sawMissingKeys = true;
                 missingKeys = property.Value;
             }
+            else if (string.Equals(property.Name, "revision", StringComparison.OrdinalIgnoreCase))
+            {
+                if (revision is not null)
+                {
+                    return false;
+                }
+
+                revision = property.Value;
+            }
             else if (!unknown.Contains(property.Name, StringComparer.OrdinalIgnoreCase))
             {
                 // ADR-0003: Central may add top-level response members; skip them and report their names.
@@ -118,6 +133,31 @@ internal static class DistributionResolveResponseParser
         }
 
         return sawValues && sawMissingKeys;
+    }
+
+    // POC-062: an older Central omits the revision; when present it is an opaque, log-safe string.
+    private static bool TryReadRevision(JsonElement? element, out string? revision)
+    {
+        revision = null;
+        if (element is null)
+        {
+            return true;
+        }
+
+        if (element.Value.ValueKind != JsonValueKind.String)
+        {
+            return false;
+        }
+
+        string candidate = element.Value.GetString()!;
+        if (candidate.Length is 0 or > MaxRevisionLength
+            || candidate.Any(static character => character is < '!' or > '~'))
+        {
+            return false;
+        }
+
+        revision = candidate;
+        return true;
     }
 
     private static bool TryReadValues(

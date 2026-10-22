@@ -11,7 +11,8 @@ internal sealed record StartupMarker(
     int? HttpStatusCode,
     double? DelayMs,
     double? ElapsedMs,
-    string[]? MissingRequiredKeys = null)
+    string[]? MissingRequiredKeys = null,
+    string? Revision = null)
 {
     private const string ExpectedSource = "demo-central-config";
 
@@ -39,7 +40,8 @@ internal sealed record StartupMarker(
                 ReadInt32(root, "httpStatusCode"),
                 ReadDouble(root, "delayMs"),
                 ReadDouble(root, "elapsedMs"),
-                ReadStringArray(root, "missingRequiredKeys"));
+                ReadStringArray(root, "missingRequiredKeys"),
+                ReadString(root, "revision"));
             return true;
         }
         catch (JsonException)

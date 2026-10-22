@@ -1,5 +1,6 @@
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Swashbuckle.AspNetCore.Annotations;
 
 namespace Demo.DotnetCore.ConfigService.CentralHost;
@@ -12,14 +13,18 @@ public sealed class DistributionControllerDependencies
 
     internal DistributionModule Module { get; }
 
+    internal ILogger Logger { get; }
+
     internal DistributionControllerDependencies(
         StrictJsonRequestReader reader,
         IValidator<ResolveConfigurationsRequest> validator,
-        DistributionModule module)
+        DistributionModule module,
+        ILogger<DistributionConfigurationsController> logger)
     {
         Reader = reader;
         Validator = validator;
         Module = module;
+        Logger = logger;
     }
 }
 
@@ -39,7 +44,7 @@ public sealed class DistributionConfigurationsController : ControllerBase
         """{ "environment": "UAT", "keys": ["Demo:Message", "Demo:LocalFallback"] }""")]
     [SwaggerOperation(
         Summary = "取得多個設定值（Resolve）",
-        Description = "Client 啟動時呼叫的介面。傳入中央環境與需要的設定鍵，存在的放在 `values`，從未建立或已移除的放在 `missingKeys`。缺值不會讓請求失敗；是否阻止啟動由 Client 依設定鍵是否必要來決定。")]
+        Description = "Client 啟動時呼叫的介面。傳入中央環境與需要的設定鍵，存在的放在 `values`，從未建立或已移除的放在 `missingKeys`。缺值不會讓請求失敗；是否阻止啟動由 Client 依設定鍵是否必要來決定。`revision` 是依這次請求的設定鍵與各自版本號計算的指紋，只能比較相同或不同。")]
     [SwaggerResponse(StatusCodes.Status200OK, "`values` 與 `missingKeys` 剛好涵蓋請求的每個設定鍵。", typeof(ResolveConfigurationsResponse), OpenApiDescriptions.Json)]
     [SwaggerResponse(StatusCodes.Status400BadRequest, OpenApiDescriptions.ValidationFailed, typeof(ProblemDetails), OpenApiDescriptions.Problem)]
     [SwaggerResponse(StatusCodes.Status500InternalServerError, OpenApiDescriptions.ServerError, typeof(ProblemDetails), OpenApiDescriptions.Problem)]
@@ -60,6 +65,14 @@ public sealed class DistributionConfigurationsController : ControllerBase
             keys,
             cancellationToken);
 
-        return Ok(new ResolveConfigurationsResponse(resolution.Values, resolution.MissingKeys));
+        // POC-062: the revision is one-way, so record the per-key versions behind it for later lookup in history.
+        _dependencies.Logger.LogInformation(
+            "Central Host resolved configuration. TraceIdentifier: {TraceIdentifier}; Environment: {Environment}; Revision: {Revision}; KeyVersions: {KeyVersions}",
+            CentralProblemDetailsWriter.GetTraceIdentifier(HttpContext),
+            request.Environment,
+            resolution.Revision,
+            resolution.KeyVersions.Select(static keyVersion => $"{keyVersion.Key}={keyVersion.Version}").ToArray());
+
+        return Ok(new ResolveConfigurationsResponse(resolution.Values, resolution.MissingKeys, resolution.Revision));
     }
 }

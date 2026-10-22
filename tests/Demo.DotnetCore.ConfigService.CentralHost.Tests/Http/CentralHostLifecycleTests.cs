@@ -55,7 +55,7 @@ public sealed class CentralHostLifecycleTests
         {
             Assert.Equal(HttpStatusCode.OK, resolveResponse.StatusCode);
             using var resolveBody = await ReadJsonAsync(resolveResponse);
-            AssertTopLevelMembers(resolveBody.RootElement, "values", "missingKeys");
+            AssertTopLevelMembers(resolveBody.RootElement, "values", "missingKeys", "revision");
 
             var values = resolveBody.RootElement.GetProperty("values");
             AssertTopLevelMembers(values, "Demo:Message");
@@ -90,7 +90,7 @@ public sealed class CentralHostLifecycleTests
         {
             Assert.Equal(HttpStatusCode.OK, resolveRemovedResponse.StatusCode);
             using var resolveRemovedBody = await ReadJsonAsync(resolveRemovedResponse);
-            AssertTopLevelMembers(resolveRemovedBody.RootElement, "values", "missingKeys");
+            AssertTopLevelMembers(resolveRemovedBody.RootElement, "values", "missingKeys", "revision");
             AssertTopLevelMembers(resolveRemovedBody.RootElement.GetProperty("values"));
             Assert.Equal(
                 ["Demo:Message"],
