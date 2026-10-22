@@ -65,7 +65,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\start-http-demo.ps1
 
 觀眾若問「這個中央環境現在有哪些設定？」，可在任一步驟後執行呼叫檔的**附錄 A** 請求。它只列出設定鍵、版本與狀態，不包含值，也不改變資料，不影響 01–17 的預期結果。
 
-Central 執行期間，也可以用瀏覽器開啟 Swagger UI：`http://127.0.0.1:5180/swagger`。它列出 Central 每個管理與分發端點的請求與回應結構，適合回答「這個 API 要傳什麼、會回什麼」，也能按「Try it out」直接呼叫。要看演示資料時，把 `environment` 填成 `HttpDemo` 並只用查詢端點（列表、`current`、`history`）；在 Swagger UI 對 `HttpDemo` 執行 Set 或 Remove 會增加版本，使後續步驟的版本號與預期不同。請求本文的預設範例使用 `UAT`，不影響演示資料。
+Central 執行期間，也可以用瀏覽器開啟 Swagger UI：`http://127.0.0.1:5180/swagger`。它列出 Central 每個管理與分發端點的請求與回應結構，適合回答「這個 API 要傳什麼、會回什麼」，也能按「Try it out」直接呼叫。管理端點需要金鑰：先按頁面右上角的「Authorize」，填入 `demo-only-management-key-do-not-use-in-production`（與 `.http` 的 `@managementApiKey` 相同）再按「Authorize」，之後從頁面送出的管理請求都會帶上 `X-Api-Key` 標頭；分發端點不需要。要看演示資料時，把 `environment` 填成 `HttpDemo` 並只用查詢端點（列表、`current`、`history`）；在 Swagger UI 對 `HttpDemo` 執行 Set 或 Remove 會增加版本，使後續步驟的版本號與預期不同。請求本文的預設範例使用 `UAT`，不影響演示資料。
 
 每段請求上方都列出預期狀態碼與關鍵欄位，請對照實際回應。`snapshot-v3` 是值的名稱，不是版本號；Remove 也會增加版本。
 
@@ -147,8 +147,11 @@ Write-Host "本次演示資料：$demoSession"
 dotnet src/Demo.DotnetCore.ConfigService.CentralHost/bin/Release/net8.0/Demo.DotnetCore.ConfigService.CentralHost.dll `
     --contentRoot "$centralContentRoot" `
     --urls http://127.0.0.1:5180 `
+    --environment Development `
     --ConnectionStrings:CentralConfigDatabase "Data Source=$demoDatabase"
 ```
+
+`--environment Development` 讓 Central 讀取 `appsettings.Development.json` 內建的示範管理金鑰；省略時管理介面一律回 `401`。
 
 保留此終端機與程序，然後執行 **01–04**。
 

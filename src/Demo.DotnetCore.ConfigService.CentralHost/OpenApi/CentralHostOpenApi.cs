@@ -23,6 +23,14 @@ internal static class CentralHostOpenApi
             options.EnableAnnotations();
             options.SupportNonNullableReferenceTypes();
             options.OperationFilter<JsonRequestBodyOperationFilter>();
+            options.AddSecurityDefinition(ManagementApiKeyDefaults.Scheme, new OpenApiSecurityScheme
+            {
+                Type = SecuritySchemeType.ApiKey,
+                In = ParameterLocation.Header,
+                Name = ManagementApiKeyDefaults.HeaderName,
+                Description = "管理介面的共用示範金鑰。演示環境的值在 Central 的 appsettings.Development.json。"
+            });
+            options.OperationFilter<ManagementApiKeyOperationFilter>();
         });
 
         return services;

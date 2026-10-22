@@ -14,6 +14,8 @@ internal static class OpenApiDescriptions
 
     public const string ValidationFailed =
         "請求格式或欄位不正確（`code`: `validation_failed`）。`errors` 列出每個欄位的問題，例如缺少欄位、未知欄位或設定鍵格式錯誤。";
+    public const string Unauthorized =
+        "沒有帶 `X-Api-Key` 標頭或金鑰不正確（`code`: `unauthorized`），兩種情況不區分。按頁面右上角的「Authorize」輸入金鑰。";
     public const string NotFound = "這個中央環境下從未建立過此設定鍵（`code`: `configuration_not_found`）。";
     public const string AlreadyRemoved = "設定鍵目前已是移除狀態，不能再移除一次（`code`: `configuration_already_removed`）。";
     public const string ServerError =
