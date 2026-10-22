@@ -1,6 +1,6 @@
 # 開發交接：Config Distribution POC
 
-更新日期：2026-10-21。
+更新日期：2026-10-22。
 
 本文件供維護者或 Agent 接手公開版本。專案用於概念驗證、團隊需求討論與教學展示，不以正式部署為目標。下一階段的功能與驗收條件尚未確認。
 
@@ -73,7 +73,7 @@
 - [#16](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/16)：移除完整示範手冊，理由見決策紀錄 POC-060。它獨有的兩項內容移到新位置：設定來源優先序的人工展示成為 [HTTP 操作說明](docs/demo/http-demo-guide.md)第 5 節（選用，另啟動 Demo C 於 `5183`，`.http` 新增附錄 B；原附錄改名附錄 A），使用端引用套件的方式寫進 [Client 使用說明](src/Demo.DotnetCore.ConfigService.Client/README.md)的「引用套件」。README、短入門導讀與 Demo／E2E 規格第 10 節同步修訂。
 - 驗證（Linux、PowerShell 7.6、SDK 10.0.113）：以啟動腳本執行 Central，照第 5 節的指令在另一個終端機啟動 Demo C，有效設定依序為 `environment-value`、`command-value`，中央值不變，移除環境變數後 `Test-Path` 為 `False`。照「引用套件」的步驟在儲存庫外封裝並建立一個 `net8.0` 使用端，還原、建置並連到 Central，取得中央值。README「完整驗證」全部通過：format 無變更、Release build 0 warning；CentralHost.Tests 192、Client.Tests 189、DemoHost.Tests 12、EndToEnd.Tests 130。
 
-### 進行中的變更（分支 `claude/project-thread-0pr4qk`，尚未合併）
+### PR #19（已合併，合併提交 `0dfac79`）
 
 - [#13](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/13)：Central 以 Swashbuckle 10.3.0（`SwaggerGen`、`SwaggerUI`、`Annotations`）提供 OpenAPI 文件 `/swagger/v1/swagger.json` 與 Swagger UI `/swagger`，一律開啟、不列入 `/health/ready`，取捨見決策紀錄 POC-061。控制器不使用模型繫結，所以 Set、Remove、Resolve 以 `JsonRequestBody` 屬性標示請求型別與範例（中央環境 `UAT`），由 `JsonRequestBodyOperationFilter` 寫入文件；以 Swashbuckle 標註屬性（`SwaggerOperation`、`SwaggerParameter`、`SwaggerResponse`、`SwaggerTag`）提供中文摘要、參數與回應說明，共用文字在 `OpenApiDescriptions`，回應標示成功的 `application/json` 與錯誤的 `application/problem+json`。既有端點行為不變。README、HTTP 操作說明第 4 節與設計文件第 4 節開頭已提及網址。
 - 驗證（Linux、SDK 10.0.113）：README「完整驗證」全部通過，format 無變更、Release build 0 warning；CentralHost.Tests 200（新增 `OpenApiDocumentTests` 8 個）、Client.Tests 189、DemoHost.Tests 12、EndToEnd.Tests 130。另以真正的 Central 程序（`127.0.0.1:5180`）與 Playwright 操作 Swagger UI，依序對 Set、current、history、列表、Resolve、Remove 按「Try it out」與「Execute」，回應均符合設計文件第 4 節，頁面顯示各端點的中文摘要與說明。
@@ -82,6 +82,13 @@
 
 1. [#2](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/2) 第二段與 [#11](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/11) 的 Windows 驗證：維護者在 Windows 上以 `scripts/start-http-demo.ps1` 走一次 HTTP 演示，分別用 Windows PowerShell 5.1 與 PowerShell 7；留意執行原則、系統保留的連接埠範圍、示範當天使用的 `.http` 工具，以及結束後連接埠是否釋放。
 2. [#3](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/3)：在示範會議上取得架構決策共識，結論寫回決策紀錄，再依結論開立後續 Issue。
+3. 趁有人依賴契約之前定案的四項（2026-10-22 已決定、尚未實作），各 Issue 留言有完整結論：
+   - [#20](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/20)：Client 略過未知的最上層回應欄位並記 Warning，Central 對請求維持嚴格（[ADR-0003](docs/adr/0003-tolerant-client-strict-central-requests.md)）。須先於 #21 完成。
+   - [#21](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/21)：Resolve 回應加上依請求設定鍵計算的 `revision`（決策紀錄 POC-062），並新增 `docs/knowledge/resolve-revision.md` 說明使用場景。
+   - [#22](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/22)：項目版本記錄必填的 `changedBy` 與選填的 `reason`（POC-063）。
+   - [#23](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/23)：管理介面要求共用的 `X-Api-Key`，Swagger UI 可帶標頭（POC-064）。
+
+   這幾項會修改設計文件；在實作完成前，設計文件與程式仍描述目前行為。
 
 其他待辦以 [GitHub Issues](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues) 為準，本文件不重複列出。
 
@@ -103,7 +110,7 @@ POC 僅在隔離環境使用非敏感資料。根設定診斷端點會公開未�
 | --- | --- |
 | 認識架構與執行方式 | [README](README.md)、[短入門導讀](docs/getting-started.md)。 |
 | 調整術語、行為或 HTTP 契約 | [CONTEXT](CONTEXT.md)、[POC 設計](docs/design/config-distribution-poc.md)。 |
-| 理解設計理由 | [決策紀錄](docs/decisions/poc-decision-log.md)、[共享值 ADR](docs/adr/0001-share-value-by-environment-and-key.md)、[設定鍵選擇 ADR](docs/adr/0002-consumer-owned-key-selection.md)。 |
+| 理解設計理由 | [決策紀錄](docs/decisions/poc-decision-log.md)、[共享值 ADR](docs/adr/0001-share-value-by-environment-and-key.md)、[設定鍵選擇 ADR](docs/adr/0002-consumer-owned-key-selection.md)、[回應相容性 ADR](docs/adr/0003-tolerant-client-strict-central-requests.md)。 |
 | 修改 Client 或就緒探針 | [Client 使用說明](src/Demo.DotnetCore.ConfigService.Client/README.md)、[Central readiness 設計](docs/design/central-readiness.md)。 |
 | 修改 Demo 或跨程序測試 | [Demo／E2E 設計](docs/design/demo-host-e2e.md)。 |
 | 向團隊逐步演示 | [HTTP 操作說明](docs/demo/http-demo-guide.md)、[HTTP 呼叫檔](docs/demo/config-distribution-demo.http)。 |
