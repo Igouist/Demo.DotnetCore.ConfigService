@@ -201,7 +201,7 @@ Readiness tests 驗證固定的 `200 ready`／`503 unavailable` contract、launc
 | 理解或調整 domain language | [`CONTEXT.md`](CONTEXT.md) 定義 canonical terms，且不包含實作細節。 |
 | 調整行為或 HTTP contract | [POC 設計規格](docs/design/config-distribution-poc.md) 定義已接受的架構、契約、不變條件與驗證策略。 |
 | 調整 Operational readiness | [Central readiness 設計](docs/design/central-readiness.md) 定義 `/health/ready` 與 launch-correlation contract。 |
-| 理解決策原因 | [POC Decision Log](docs/decisions/poc-decision-log.md) 保存替代方案、理由與修訂歷史。[ADR-0001](docs/adr/0001-share-value-by-environment-and-key.md) 與 [ADR-0002](docs/adr/0002-consumer-owned-key-selection.md) 記錄核心原則。 |
+| 理解決策原因 | [POC Decision Log](docs/decisions/poc-decision-log.md) 保存替代方案、理由與修訂歷史。[ADR-0001](docs/adr/0001-share-value-by-environment-and-key.md)、[ADR-0002](docs/adr/0002-consumer-owned-key-selection.md) 與 [ADR-0003](docs/adr/0003-tolerant-client-strict-central-requests.md) 記錄核心原則。 |
 | 修改 Client public API 或設定 | `Client`、`Client.Tests` 與 [Client 使用說明](src/Demo.DotnetCore.ConfigService.Client/README.md)。 |
 | 修改 Demo 或跨程序行為 | `DemoHost`、`DemoHost.Tests`、`EndToEnd.Tests` 與 [Demo/E2E 規格](docs/design/demo-host-e2e.md)。 |
 | 向團隊示範 | [HTTP 演示操作說明](docs/demo/http-demo-guide.md) 與啟動腳本 [`scripts/start-http-demo.ps1`](scripts/start-http-demo.ps1)。 |
