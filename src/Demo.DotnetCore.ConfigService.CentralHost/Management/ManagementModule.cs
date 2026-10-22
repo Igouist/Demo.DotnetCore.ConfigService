@@ -15,21 +15,23 @@ internal sealed class ManagementModule
         EnvironmentName environment,
         ConfigurationKey key,
         string value,
+        ChangeAttribution attribution,
         CancellationToken cancellationToken)
     {
         var identity = new ConfigurationEntryIdentity(environment, key);
         var createdAtUtc = _timeProvider.GetUtcNow();
-        return _store.SetAsync(identity, value, createdAtUtc, cancellationToken);
+        return _store.SetAsync(identity, value, attribution, createdAtUtc, cancellationToken);
     }
 
     public async Task<ConfigurationCommandReceipt> RemoveAsync(
         EnvironmentName environment,
         ConfigurationKey key,
+        ChangeAttribution attribution,
         CancellationToken cancellationToken)
     {
         var identity = new ConfigurationEntryIdentity(environment, key);
         var createdAtUtc = _timeProvider.GetUtcNow();
-        var result = await _store.RemoveAsync(identity, createdAtUtc, cancellationToken);
+        var result = await _store.RemoveAsync(identity, attribution, createdAtUtc, cancellationToken);
 
         return result switch
         {

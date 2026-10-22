@@ -6,22 +6,23 @@ public sealed class ManagementValidatorTests
     public void Set_accumulates_independent_invalid_fields_as_contract_errors()
     {
         var result = new SetConfigurationRequestValidator()
-            .Validate(new SetConfigurationRequest(" ", "CentralConfig:Value", null))
+            .Validate(new SetConfigurationRequest(" ", "CentralConfig:Value", null, " ", null))
             .ToContractErrors();
 
         AssertErrorsContain(
             result,
             ("environment", "environment_required", "Environment is required."),
             ("key", "invalid_configuration_key", "Configuration Key has an invalid structure."),
-            ("value", "value_required", "Value is required."));
-        Assert.Equal(3, result.Count);
+            ("value", "value_required", "Value is required."),
+            ("changedBy", "changed_by_required", "ChangedBy is required."));
+        Assert.Equal(4, result.Count);
     }
 
     [Fact]
     public void Set_stops_each_dependent_field_chain_after_the_first_failure()
     {
         var result = new SetConfigurationRequestValidator()
-            .Validate(new SetConfigurationRequest(" ", "", null))
+            .Validate(new SetConfigurationRequest(" ", "", null, "alice", null))
             .ToContractErrors();
 
         AssertErrorsContain(
@@ -40,7 +41,7 @@ public sealed class ManagementValidatorTests
     public void Remove_validates_environment(string? environment, string code, string message)
     {
         var result = new RemoveConfigurationRequestValidator()
-            .Validate(new RemoveConfigurationRequest(environment, "Demo:Setting"))
+            .Validate(new RemoveConfigurationRequest(environment, "Demo:Setting", "alice", null))
             .ToContractErrors();
 
         Assert.Single(result);
@@ -64,11 +65,81 @@ public sealed class ManagementValidatorTests
     public void Set_rejects_value_larger_than_16_kib_in_utf8_bytes()
     {
         var result = new SetConfigurationRequestValidator()
-            .Validate(new SetConfigurationRequest("Production", "Demo:Setting", new string('界', 5_462)))
+            .Validate(new SetConfigurationRequest("Production", "Demo:Setting", new string('界', 5_462), "alice", null))
             .ToContractErrors();
 
         Assert.Single(result);
         AssertError(result[0], "value", "value_too_large", "Value must be at most 16,384 UTF-8 bytes.");
+    }
+
+    [Theory]
+    [InlineData(null, "changed_by_required", "ChangedBy is required.")]
+    [InlineData("   ", "changed_by_required", "ChangedBy is required.")]
+    [InlineData("ali\nce", "changed_by_invalid_characters", "ChangedBy must not contain control characters.")]
+    [InlineData("ali\u0000ce", "changed_by_invalid_characters", "ChangedBy must not contain control characters.")]
+    public void Set_and_remove_require_a_printable_changed_by(string? changedBy, string code, string message)
+    {
+        var setResult = new SetConfigurationRequestValidator()
+            .Validate(new SetConfigurationRequest("Production", "Demo:Setting", "x", changedBy, null))
+            .ToContractErrors();
+        var removeResult = new RemoveConfigurationRequestValidator()
+            .Validate(new RemoveConfigurationRequest("Production", "Demo:Setting", changedBy, null))
+            .ToContractErrors();
+
+        AssertError(Assert.Single(setResult), "changedBy", code, message);
+        AssertError(Assert.Single(removeResult), "changedBy", code, message);
+    }
+
+    [Fact]
+    public void Change_attribution_limits_apply_after_trimming()
+    {
+        string changedByAtLimit = "  " + new string('a', ChangeAttribution.MaxChangedByLength) + "  ";
+        string reasonAtLimit = " " + new string('b', ChangeAttribution.MaxReasonLength) + " ";
+        var validator = new SetConfigurationRequestValidator();
+
+        Assert.Empty(validator
+            .Validate(new SetConfigurationRequest("Production", "Demo:Setting", "x", changedByAtLimit, reasonAtLimit))
+            .ToContractErrors());
+
+        var tooLong = validator
+            .Validate(new SetConfigurationRequest(
+                "Production",
+                "Demo:Setting",
+                "x",
+                new string('a', ChangeAttribution.MaxChangedByLength + 1),
+                new string('b', ChangeAttribution.MaxReasonLength + 1)))
+            .ToContractErrors();
+        AssertErrorsContain(
+            tooLong,
+            ("changedBy", "changed_by_too_long", "ChangedBy must be at most 100 characters."),
+            ("reason", "reason_too_long", "Reason must be at most 500 characters."));
+        Assert.Equal(2, tooLong.Count);
+
+        var attribution = ChangeAttribution.FromValidated(changedByAtLimit, reasonAtLimit);
+        Assert.Equal(new string('a', ChangeAttribution.MaxChangedByLength), attribution.ChangedBy);
+        Assert.Equal(new string('b', ChangeAttribution.MaxReasonLength), attribution.Reason);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void Blank_reason_is_optional_and_stored_as_null(string? reason)
+    {
+        Assert.Empty(new RemoveConfigurationRequestValidator()
+            .Validate(new RemoveConfigurationRequest("Production", "Demo:Setting", "alice", reason))
+            .ToContractErrors());
+        Assert.Null(ChangeAttribution.FromValidated("alice", reason).Reason);
+    }
+
+    [Fact]
+    public void Reason_rejects_control_characters()
+    {
+        var result = new SetConfigurationRequestValidator()
+            .Validate(new SetConfigurationRequest("Production", "Demo:Setting", "x", "alice", "line1\nline2"))
+            .ToContractErrors();
+
+        AssertError(Assert.Single(result), "reason", "reason_invalid_characters", "Reason must not contain control characters.");
     }
 
     private static void AssertErrorsContain(

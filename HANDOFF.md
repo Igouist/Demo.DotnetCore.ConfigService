@@ -88,6 +88,11 @@
 - [#21](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/21)：依 POC-062，Resolve 回應加上 `revision`，由 Central 在讀取值的同一個交易內，依請求設定鍵的最新版本號當場計算（`r1-` 加 SHA-256 前 12 位元組的十六進位），不儲存。Central 每次 Resolve 寫一筆 Information 日誌（`TraceIdentifier`、中央環境、`Revision`、`KeyVersions`，不含值）；Client 驗證 `revision`（選填，1–128 個可見 ASCII 字元）並寫進啟動成功的 Information 日誌，Demo 的 `loaded` 標記帶出 `revision`。新增[Resolve 回應的 `revision`](docs/knowledge/resolve-revision.md)，README 與 Client README 已連結；設計文件第 4.6、8.2、9.3 節、Demo／E2E 規格與決策紀錄 POC-026／POC-062 已同步。
 - 驗證（Linux、SDK 10.0.113）：README「完整驗證」全部通過，format 無變更、Release build 0 warning；CentralHost.Tests 208、Client.Tests 205、DemoHost.Tests 13、EndToEnd.Tests 130。
 
+### #22 版本紀錄的 `changedBy`／`reason`（PR 審查中，接在 #21 之後）
+
+- [#22](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/22)：依 POC-063，Set 與 Remove 要求必填的 `changedBy`、選填的 `reason`，去除前後空白後分別限 100、500 個字元並拒絕控制字元；歷程的每個版本回傳兩個欄位，目前狀態與列表不回傳。`changedBy` 是自行填寫的文字；Central 以 `ChangeAttribution` 承載，未來改由登入身分建立時，儲存與回應形狀不變。資料表 `ConfigurationEntryVersions` 直接在結構描述 v1 加上 `ChangedBy`、`Reason`，**舊的本機資料庫會被判定為不相容而拒絕啟動，刪除檔案重建即可**（一鍵啟動腳本預設每次使用新的暫存資料庫，不受影響）。`.http` 新增 `@changedBy` 變數並為每個寫入請求帶上原因；E2E 的管理用戶端帶 `e2e-tests`。設計文件第 4.1、4.2、4.4、6.2 節、短入門導讀、SQLite 外部工具查詢與決策紀錄已同步。
+- 驗證（Linux、SDK 10.0.113）：README「完整驗證」全部通過，format 無變更、Release build 0 warning；CentralHost.Tests 222、Client.Tests 205、DemoHost.Tests 13、EndToEnd.Tests 130。
+
 ### 下一步
 
 1. [#2](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/2) 第二段與 [#11](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/11) 的 Windows 驗證：維護者在 Windows 上以 `scripts/start-http-demo.ps1` 走一次 HTTP 演示，分別用 Windows PowerShell 5.1 與 PowerShell 7；留意執行原則、系統保留的連接埠範圍、示範當天使用的 `.http` 工具，以及結束後連接埠是否釋放。
@@ -95,7 +100,7 @@
 3. 趁有人依賴契約之前定案的四項（2026-10-22 已決定、尚未實作），各 Issue 留言有完整結論：
    - [#20](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/20)：已實作，見上方。四項依序各開一個堆疊的 PR，須依 #20 → #23 的順序合併。
    - [#21](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/21)：已實作，見上方。
-   - [#22](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/22)：項目版本記錄必填的 `changedBy` 與選填的 `reason`（POC-063）。
+   - [#22](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/22)：已實作，見上方。
    - [#23](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/23)：管理介面要求共用的 `X-Api-Key`，Swagger UI 可帶標頭（POC-064）。
 
    這幾項會修改設計文件；在實作完成前，設計文件與程式仍描述目前行為。

@@ -62,11 +62,13 @@ string? message = configuration["Demo:FallbackAllowedMessage"];
 {
   "environment": "UAT",
   "key": "Demo:CentralRequiredMessage",
-  "value": "snapshot-v1"
+  "value": "snapshot-v1",
+  "changedBy": "alice",
+  "reason": "建立第一版"
 }
 ```
 
-**代表什麼？** 中央已有這個設定鍵的值。另一個應用程式若選擇相同中央環境與設定鍵，也會取得同一份中央值。
+**代表什麼？** 中央已有這個設定鍵的值，版本歷史也記下是誰、為什麼寫入（`changedBy` 必填、`reason` 選填，目前是自行填寫）。另一個應用程式若選擇相同中央環境與設定鍵，也會取得同一份中央值。
 
 ### 第二步：應用程式啟動時載入
 

@@ -18,6 +18,8 @@ internal static class SqliteSchema
             Operation            TEXT NOT NULL CHECK (Operation IN ('Set', 'Remove')),
             Value                TEXT NULL,
             CreatedAtUtc         TEXT NOT NULL,
+            ChangedBy            TEXT NOT NULL,
+            Reason               TEXT NULL,
             CONSTRAINT FK_ConfigurationEntryVersions_Entry
                 FOREIGN KEY (ConfigurationEntryId) REFERENCES ConfigurationEntries (Id),
             CONSTRAINT UQ_ConfigurationEntryVersions_Version

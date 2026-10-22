@@ -37,7 +37,7 @@ no such collation sequence: ORDINAL_IGNORE_CASE
 
 ```sh
 sqlite3 -readonly -header central-config.db "
-  SELECT e.Environment, e.ConfigurationKey, v.Version, v.Operation, v.Value, v.CreatedAtUtc
+  SELECT e.Environment, e.ConfigurationKey, v.Version, v.Operation, v.Value, v.CreatedAtUtc, v.ChangedBy, v.Reason
   FROM ConfigurationEntries AS e
   JOIN ConfigurationEntryVersions AS v ON v.ConfigurationEntryId = e.Id
   WHERE e.Environment = 'HttpDemo' COLLATE NOCASE

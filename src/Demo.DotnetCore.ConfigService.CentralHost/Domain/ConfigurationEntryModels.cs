@@ -35,7 +35,8 @@ internal sealed record ConfigurationVersion(
     long Version,
     ConfigurationOperation Operation,
     string? Value,
-    DateTimeOffset CreatedAtUtc);
+    DateTimeOffset CreatedAtUtc,
+    ChangeAttribution Attribution);
 
 internal sealed record ConfigurationHistory(
     EnvironmentName Environment,

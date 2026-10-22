@@ -196,6 +196,7 @@ public sealed class ConfigurationDistributionScenarios(PackagedDemoFixture fixtu
                     history.Versions.Select(static item => item.Operation));
                 Assert.Equal(new string?[] { "history-v3", null, "history-v1" },
                     history.Versions.Select(static item => item.Value));
+                Assert.All(history.Versions, static item => Assert.Equal(ManagementClient.ChangedBy, item.ChangedBy));
 
                 await scenario.StartDemoAndWaitUntilReadyAsync();
                 Assert.Equal(

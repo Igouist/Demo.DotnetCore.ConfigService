@@ -40,6 +40,10 @@ internal sealed class StoredReadVersion
     public string? Value { get; init; }
 
     public string? CreatedAtUtc { get; init; }
+
+    public string? ChangedBy { get; init; }
+
+    public string? Reason { get; init; }
 }
 
 internal sealed class StoredEntrySummaryRow
@@ -55,6 +59,10 @@ internal sealed class StoredEntrySummaryRow
     public string? Value { get; init; }
 
     public string? CreatedAtUtc { get; init; }
+
+    public string? ChangedBy { get; init; }
+
+    public string? Reason { get; init; }
 }
 
 internal sealed class StoredResolutionRow

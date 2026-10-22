@@ -26,7 +26,9 @@ internal sealed class SqliteDatabaseInitializer
         new("Version", "INTEGER", IsNotNull: true, PrimaryKeyOrder: 0),
         new("Operation", "TEXT", IsNotNull: true, PrimaryKeyOrder: 0),
         new("Value", "TEXT", IsNotNull: false, PrimaryKeyOrder: 0),
-        new("CreatedAtUtc", "TEXT", IsNotNull: true, PrimaryKeyOrder: 0)
+        new("CreatedAtUtc", "TEXT", IsNotNull: true, PrimaryKeyOrder: 0),
+        new("ChangedBy", "TEXT", IsNotNull: true, PrimaryKeyOrder: 0),
+        new("Reason", "TEXT", IsNotNull: false, PrimaryKeyOrder: 0)
     ];
 
     private readonly CentralConfigDatabaseOptions _options;

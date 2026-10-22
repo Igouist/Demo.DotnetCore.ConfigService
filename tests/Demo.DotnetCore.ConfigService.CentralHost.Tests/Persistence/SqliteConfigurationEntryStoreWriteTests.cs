@@ -242,9 +242,9 @@ public sealed class SqliteConfigurationEntryStoreWriteTests
             VALUES (1, 'Production', 'Demo:Message');
 
             INSERT INTO ConfigurationEntryVersions
-                (ConfigurationEntryId, Version, Operation, Value, CreatedAtUtc)
+                (ConfigurationEntryId, Version, Operation, Value, CreatedAtUtc, ChangedBy)
             VALUES
-                (1, @Version, 'Set', 'last-value', @CreatedAtUtc);
+                (1, @Version, 'Set', 'last-value', @CreatedAtUtc, 'test-author');
             """,
             new
             {
