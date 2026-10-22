@@ -88,6 +88,28 @@ public sealed class StartupConsoleLoggerTests
     }
 
     [Fact]
+    public void Emits_unknown_response_member_marker_with_names_only()
+    {
+        using var output = new StringWriter();
+        var logger = new StartupConsoleLogger(output);
+
+        Emit(
+            logger,
+            LogLevel.Warning,
+            ("UnknownResponseMembers", new[] { "future", "other" }),
+            ("Environment", "never-serialize"));
+
+        string line = Assert.Single(
+            output.ToString().Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries));
+        AssertMarker(line, "unknown-response-members", "source", "event", "unknownResponseMembers");
+        using JsonDocument marker = JsonDocument.Parse(line);
+        Assert.Equal(
+            ["future", "other"],
+            marker.RootElement.GetProperty("unknownResponseMembers").EnumerateArray().Select(name => name.GetString()));
+        Assert.DoesNotContain("never-serialize", output.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Ignores_unrecognized_levels_without_calling_the_formatter()
     {
         using var output = new StringWriter();

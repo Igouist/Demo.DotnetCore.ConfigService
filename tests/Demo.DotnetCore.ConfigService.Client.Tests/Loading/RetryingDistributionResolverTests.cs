@@ -74,6 +74,40 @@ public sealed class RetryingDistributionResolverTests
     }
 
     [Fact]
+    public async Task Unknown_response_members_are_accepted_with_one_warning_after_a_retry()
+    {
+        var time = new FakeTimeProvider();
+        var transport = new FakeDistributionTransport();
+        transport.EnqueueResponse(Response(HttpStatusCode.ServiceUnavailable));
+        transport.EnqueueResponse(Response(
+            HttpStatusCode.OK,
+            "{\"values\":{\"Demo:Required\":\"central\"},\"missingKeys\":[\"Demo:Fallback\"],\"future\":{\"x\":\"must-not-log\"},\"other\":1}"));
+        var logger = new RecordingLogger();
+        var resolver = CreateResolver(transport, time, new FixedRetryJitter(TimeSpan.Zero), logger);
+        using var total = new CancellationTokenSource(TimeSpan.FromSeconds(30), time);
+
+        Task<ResolvedCentralConfig> load = resolver.ResolveAsync(
+            EnabledBootstrap(),
+            time.GetTimestamp(),
+            CancellationToken.None,
+            total.Token);
+        await transport.WaitForNextCallAsync();
+        await logger.WaitForEntryCountAsync(1);
+        time.Advance(TimeSpan.FromSeconds(1));
+        await transport.WaitForNextCallAsync();
+        ResolvedCentralConfig result = await load;
+
+        Assert.Equal("central", result.Values["Demo:Required"]);
+        Assert.Equal(2, logger.Entries.Count);
+        LogEntry unknown = logger.Entries[1];
+        Assert.Equal(Microsoft.Extensions.Logging.LogLevel.Warning, unknown.Level);
+        Assert.Equal(
+            ["future", "other"],
+            Assert.IsAssignableFrom<IReadOnlyList<string>>(unknown.Fields[0].Value));
+        Assert.DoesNotContain("must-not-log", unknown.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task Each_retry_warning_carries_the_central_problem_reference_of_its_own_attempt()
     {
         var time = new FakeTimeProvider();

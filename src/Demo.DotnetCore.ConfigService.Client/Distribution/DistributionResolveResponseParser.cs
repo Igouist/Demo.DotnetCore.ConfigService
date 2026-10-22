@@ -43,7 +43,11 @@ internal static class DistributionResolveResponseParser
         {
             using JsonDocument document = JsonDocument.Parse(utf8Json);
             if (document.RootElement.ValueKind != JsonValueKind.Object
-                || !TryFindRequiredMembers(document.RootElement, out JsonElement valuesElement, out JsonElement missingElement)
+                || !TryFindRequiredMembers(
+                    document.RootElement,
+                    out JsonElement valuesElement,
+                    out JsonElement missingElement,
+                    out IReadOnlyList<string> unknownMembers)
                 || !TryReadValues(valuesElement, out Dictionary<string, string> values)
                 || !TryReadMissingKeys(missingElement, out HashSet<string> missingKeys)
                 || values.Keys.Any(key => !requestedSelection.Contains(key))
@@ -62,7 +66,7 @@ internal static class DistributionResolveResponseParser
                 }
             }
 
-            response = new ValidatedDistributionResponse(values, missingKeys);
+            response = new ValidatedDistributionResponse(values, missingKeys, unknownMembers);
             return true;
         }
         catch (JsonException)
@@ -74,10 +78,13 @@ internal static class DistributionResolveResponseParser
     private static bool TryFindRequiredMembers(
         JsonElement root,
         out JsonElement values,
-        out JsonElement missingKeys)
+        out JsonElement missingKeys,
+        out IReadOnlyList<string> unknownMembers)
     {
         values = default;
         missingKeys = default;
+        var unknown = new List<string>();
+        unknownMembers = unknown;
         bool sawValues = false;
         bool sawMissingKeys = false;
 
@@ -103,9 +110,10 @@ internal static class DistributionResolveResponseParser
                 sawMissingKeys = true;
                 missingKeys = property.Value;
             }
-            else
+            else if (!unknown.Contains(property.Name, StringComparer.OrdinalIgnoreCase))
             {
-                return false;
+                // ADR-0003: Central may add top-level response members; skip them and report their names.
+                unknown.Add(property.Name);
             }
         }
 
