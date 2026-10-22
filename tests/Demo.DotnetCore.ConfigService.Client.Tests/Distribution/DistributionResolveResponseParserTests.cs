@@ -66,6 +66,58 @@ public sealed class DistributionResolveResponseParserTests
         Assert.Empty(response!.UnknownMembers);
     }
 
+    [Fact]
+    public void Revision_is_read_when_present_and_optional_for_an_older_central()
+    {
+        KeySelection selection = CreateSelection(["Demo:Required"], []);
+
+        Assert.True(DistributionResolveResponseParser.TryParseAndValidate(
+            Json("""{ "values": { "Demo:Required": "x" }, "missingKeys": [], "Revision": "r1-9f2c" }"""),
+            selection,
+            out ValidatedDistributionResponse? withRevision));
+        Assert.Equal("r1-9f2c", withRevision!.Revision);
+        Assert.Empty(withRevision.UnknownMembers);
+
+        Assert.True(DistributionResolveResponseParser.TryParseAndValidate(
+            Json("""{ "values": { "Demo:Required": "x" }, "missingKeys": [] }"""),
+            selection,
+            out ValidatedDistributionResponse? withoutRevision));
+        Assert.Null(withoutRevision!.Revision);
+    }
+
+    [Theory]
+    [InlineData("null")]
+    [InlineData("1")]
+    [InlineData("\"\"")]
+    [InlineData("\"r1 9f2c\"")]
+    [InlineData("\"r1-\\n9f2c\"")]
+    [InlineData("\"r1-界\"")]
+    public void Malformed_revision_is_rejected(string revisionJson)
+    {
+        KeySelection selection = CreateSelection(["Demo:Required"], []);
+
+        Assert.False(DistributionResolveResponseParser.TryParseAndValidate(
+            Json($$"""{ "values": { "Demo:Required": "x" }, "missingKeys": [], "revision": {{revisionJson}} }"""),
+            selection,
+            out _));
+    }
+
+    [Fact]
+    public void Revision_length_is_bounded()
+    {
+        KeySelection selection = CreateSelection(["Demo:Required"], []);
+        string atLimit = new('a', DistributionResolveResponseParser.MaxRevisionLength);
+
+        Assert.True(DistributionResolveResponseParser.TryParseAndValidate(
+            Json($$"""{ "values": { "Demo:Required": "x" }, "missingKeys": [], "revision": "{{atLimit}}" }"""),
+            selection,
+            out _));
+        Assert.False(DistributionResolveResponseParser.TryParseAndValidate(
+            Json($$"""{ "values": { "Demo:Required": "x" }, "missingKeys": [], "revision": "{{atLimit}}a" }"""),
+            selection,
+            out _));
+    }
+
     [Theory]
     [MemberData(nameof(InvalidResponses))]
     public void Untrustworthy_successful_response_is_rejected(string json)
@@ -108,6 +160,7 @@ public sealed class DistributionResolveResponseParserTests
         "{ \"values\": {}, \"missingKeys\": [], \"future\": true }",
         "{ \"values\": {}, \"missingKeys\": [\"Demo:Required\", \"Demo:Fallback\"], \"MissingKeys\": [], \"future\": true }",
         "{ \"values\": { \"Demo:Required\": \"x\" }, \"missingKeys\": [\"Demo:Fallback\"], \"missingKeys\": [\"Demo:Fallback\"], \"future\": 1 }",
+        "{ \"values\": { \"Demo:Required\": \"x\" }, \"missingKeys\": [\"Demo:Fallback\"], \"revision\": \"r1-a\", \"Revision\": \"r1-b\" }",
         "{ \"values\": { \"Demo:Required\": \"a\", \"demo:required\": \"b\" }, \"missingKeys\": [\"Demo:Fallback\"] }",
         "{ \"values\": { \"Demo:Required\": null }, \"missingKeys\": [\"Demo:Fallback\"] }",
         "{ \"values\": { \"Demo:Required\": 1 }, \"missingKeys\": [\"Demo:Fallback\"] }",

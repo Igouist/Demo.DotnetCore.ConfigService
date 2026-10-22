@@ -19,7 +19,7 @@ public sealed class StartupLogEmitterTests
             "UAT",
             ["Demo:Required"]);
 
-        emitter.TryInformation(2, 1, 2, TimeSpan.FromMilliseconds(200));
+        emitter.TryInformation(2, 1, 2, TimeSpan.FromMilliseconds(200), "r1-0123456789abcdef01234567");
         emitter.TryWarning(1, CentralConfigFailureKind.TransportFailure, null, TimeSpan.FromSeconds(1));
         emitter.TryError(failure);
 
@@ -32,7 +32,7 @@ public sealed class StartupLogEmitterTests
                 Assert.Equal(LogLevel.Error, entry.Level);
                 Assert.Same(failure, entry.Exception);
             });
-        Assert.Equal("Central configuration loaded: {ValueCount} values, {MissingFallbackKeyCount} fallback-missing keys, {AttemptCount} attempt(s), {ElapsedMs} ms.", logger.Entries[0].OriginalFormat);
+        Assert.Equal("Central configuration loaded: {ValueCount} values, {MissingFallbackKeyCount} fallback-missing keys, {AttemptCount} attempt(s), {ElapsedMs} ms, revision {Revision}.", logger.Entries[0].OriginalFormat);
         Assert.Equal("Central configuration retry scheduled after attempt {AttemptCount}: {FailureKind}; HTTP status {HttpStatusCode}; delay {DelayMs} ms; central error code {CentralErrorCode}; central trace id {CentralTraceId}.", logger.Entries[1].OriginalFormat);
         Assert.Equal("Central configuration load failed: {FailureKind}; attempts {AttemptCount}; elapsed {ElapsedMs} ms; Environment {Environment}; missing required keys {MissingRequiredKeys}; central error code {CentralErrorCode}; central trace id {CentralTraceId}.", logger.Entries[2].OriginalFormat);
         AssertStructuredFields(
@@ -40,7 +40,8 @@ public sealed class StartupLogEmitterTests
             ("ValueCount", 2),
             ("MissingFallbackKeyCount", 1),
             ("AttemptCount", 2),
-            ("ElapsedMs", 200d));
+            ("ElapsedMs", 200d),
+            ("Revision", "r1-0123456789abcdef01234567"));
         AssertStructuredFields(
             logger.Entries[1],
             ("AttemptCount", 1),

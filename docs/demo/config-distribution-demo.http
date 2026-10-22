@@ -34,6 +34,7 @@ Accept: application/json
 ### 04. 查看 Client 啟動時使用的分發介面
 # 預期：200，values 包含必要鍵的 snapshot-v1。
 # missingKeys 包含 Demo:FallbackAllowedMessage；後備值由 Client／本機設定決定。
+# revision 是這組設定鍵目前版本的指紋，與 Demo 啟動日誌 loaded 標記的 revision 相同；Set 之後再送一次會改變。
 POST {{centralUrl}}/api/v1/distribution/configurations/resolve
 Content-Type: application/json
 Accept: application/json

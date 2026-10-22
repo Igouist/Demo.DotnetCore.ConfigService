@@ -341,16 +341,19 @@ Removed 回應：`200 OK`，含有 `"state": "Removed"` 與 `"value": null`。�
   },
   "missingKeys": [
     "Demo:LocalFallback"
-  ]
+  ],
+  "revision": "r1-8bbca0abc2ea8e798b908301"
 }
 ```
 
-這兩個集合須在不區分大小寫的比較下，精確分割要求中相異的設定鍵：
+`values` 與 `missingKeys` 這兩個集合須在不區分大小寫的比較下，精確分割要求中相異的設定鍵：
 
 - 存在的項目在 `values` 中出現一次，包括值為空字串的項目；
 - 已移除的項目以儲存的顯示拼寫出現在 `missingKeys`；
 - 從未建立的項目以要求中的拼寫出現在 `missingKeys`；
-- 不回傳未要求的設定鍵、null 值、版本、時間戳記、使用端識別、缺值行為（Missing Behavior）或 `removedKeys`。
+- 不回傳未要求的設定鍵、null 值、逐鍵版本、時間戳記、使用端識別、缺值行為（Missing Behavior）或 `removedKeys`。
+
+`revision` 是依這次請求的設定鍵計算的不透明指紋（POC-062）：Central 在讀取值的同一個交易內取得每個請求設定鍵的最新項目版本號（從未建立為 `0`，已移除為其 Remove 版本號），把中央環境與設定鍵轉成不變文化特性大寫、設定鍵依序數排序後寫成 JSON 陣列，取其 UTF-8 的 SHA-256 前 12 個位元組，以小寫十六進位加上前綴 `r1-`。它不儲存在 Central，只能比較相同或不同。Central 每次 Resolve 以 Information 日誌記錄 `TraceIdentifier`、中央環境、`Revision` 與各設定鍵的版本號，不記錄設定值。用戶端把它帶入啟動成功的 Information 日誌；舊版 Central 不回傳時為 null。用途與注意事項見 [Resolve 回應的 `revision`](../knowledge/resolve-revision.md)。
 
 缺少的設定鍵（Missing Key）不會使 Resolve 失敗。用戶端套件在驗證完整回應之後，才決定必要或後備行為。
 
@@ -647,6 +650,7 @@ Resolved:    https://internal.example/config-center/api/v1/distribution/configur
 `200 OK` 回應符合下列任何情況時，套件會將其視為無效而拒絕：
 
 - 無法反序列化為預期的版本化 DTO 形狀；
+- `revision` 出現超過一次，或不是長度 1 至 128、只含可見 ASCII 字元的字串；
 - 包含 null 值或 UTF-8 大小超過 16 KiB 的值；
 - 包含未要求的設定鍵；
 - 要求中的某個設定鍵在兩個集合中都未出現；
@@ -779,7 +783,7 @@ POC 失敗對應如下：
 
 提供啟動日誌記錄器時，套件會嘗試發出下列結構化且不洩漏設定值的日誌：
 
-- 成功載入後發出一次 Information 摘要，包含數量、嘗試次數與經過時間；
+- 成功載入後發出一次 Information 摘要，包含數量、嘗試次數、經過時間，以及 Central 回傳的 `Revision`（可為 null）；
 - 每次排程重試時發出一次 Warning，包含嘗試次數、安全分類、選擇性的狀態、延遲，以及該次回應可為 null 的 `CentralErrorCode` 與 `CentralTraceId`；
 - 成功回應含有不認識的最上層成員時，發出一次 Warning，`UnknownResponseMembers` 只列成員名稱（第 8.2 節）；以及
 - 在擲出最終 `CentralConfigLoadException` 前，立即發出一次 Error。

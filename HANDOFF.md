@@ -83,13 +83,18 @@
 - [#20](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/20)：依 [ADR-0003](docs/adr/0003-tolerant-client-strict-central-requests.md)，Client 略過 Resolve 回應中不認識的最上層欄位，啟動照常完成，並發出一筆只列欄位名稱的 Warning（`UnknownResponseMembers`）提醒升級套件；`values`／`missingKeys` 的格式、重複與分割規則不變，Central 對請求仍以 `unknown_property` 嚴格拒絕。Demo 把這筆 Warning 輸出成 `unknown-response-members` 標記。設計文件第 8.2、9.3 節與第 15 節第 9 點、Demo／E2E 規格第 4 節標記清單與 Client README 已同步。
 - 驗證（Linux、SDK 10.0.113）：README「完整驗證」全部通過，format 無變更、Release build 0 warning；CentralHost.Tests 200、Client.Tests 196、DemoHost.Tests 13、EndToEnd.Tests 130。
 
+### #21 Resolve 的 `revision`（PR 審查中，接在 #20 之後）
+
+- [#21](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/21)：依 POC-062，Resolve 回應加上 `revision`，由 Central 在讀取值的同一個交易內，依請求設定鍵的最新版本號當場計算（`r1-` 加 SHA-256 前 12 位元組的十六進位），不儲存。Central 每次 Resolve 寫一筆 Information 日誌（`TraceIdentifier`、中央環境、`Revision`、`KeyVersions`，不含值）；Client 驗證 `revision`（選填，1–128 個可見 ASCII 字元）並寫進啟動成功的 Information 日誌，Demo 的 `loaded` 標記帶出 `revision`。新增[Resolve 回應的 `revision`](docs/knowledge/resolve-revision.md)，README 與 Client README 已連結；設計文件第 4.6、8.2、9.3 節、Demo／E2E 規格與決策紀錄 POC-026／POC-062 已同步。
+- 驗證（Linux、SDK 10.0.113）：README「完整驗證」全部通過，format 無變更、Release build 0 warning；CentralHost.Tests 208、Client.Tests 205、DemoHost.Tests 13、EndToEnd.Tests 130。
+
 ### 下一步
 
 1. [#2](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/2) 第二段與 [#11](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/11) 的 Windows 驗證：維護者在 Windows 上以 `scripts/start-http-demo.ps1` 走一次 HTTP 演示，分別用 Windows PowerShell 5.1 與 PowerShell 7；留意執行原則、系統保留的連接埠範圍、示範當天使用的 `.http` 工具，以及結束後連接埠是否釋放。
 2. [#3](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/3)：在示範會議上取得架構決策共識，結論寫回決策紀錄，再依結論開立後續 Issue。
 3. 趁有人依賴契約之前定案的四項（2026-10-22 已決定、尚未實作），各 Issue 留言有完整結論：
    - [#20](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/20)：已實作，見上方。四項依序各開一個堆疊的 PR，須依 #20 → #23 的順序合併。
-   - [#21](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/21)：Resolve 回應加上依請求設定鍵計算的 `revision`（決策紀錄 POC-062），並新增 `docs/knowledge/resolve-revision.md` 說明使用場景。
+   - [#21](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/21)：已實作，見上方。
    - [#22](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/22)：項目版本記錄必填的 `changedBy` 與選填的 `reason`（POC-063）。
    - [#23](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/23)：管理介面要求共用的 `X-Api-Key`，Swagger UI 可帶標頭（POC-064）。
 
