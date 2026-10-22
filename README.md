@@ -205,7 +205,7 @@ Readiness tests 驗證固定的 `200 ready`／`503 unavailable` contract、launc
 | 修改 Client public API 或設定 | `Client`、`Client.Tests` 與 [Client 使用說明](src/Demo.DotnetCore.ConfigService.Client/README.md)。 |
 | 修改 Demo 或跨程序行為 | `DemoHost`、`DemoHost.Tests`、`EndToEnd.Tests` 與 [Demo/E2E 規格](docs/design/demo-host-e2e.md)。 |
 | 向團隊示範 | [HTTP 演示操作說明](docs/demo/http-demo-guide.md) 與啟動腳本 [`scripts/start-http-demo.ps1`](scripts/start-http-demo.ps1)。 |
-| 研究技術背景 | [`docs/knowledge/`](docs/knowledge/README.md) 收錄 .NET configuration、logging、HTTP limits、Framework compatibility，以及用外部 SQLite 工具查看 Central 資料庫的方式。 |
+| 研究技術背景 | [`docs/knowledge/`](docs/knowledge/README.md) 收錄 .NET configuration、logging、HTTP limits、Framework compatibility，用外部 SQLite 工具查看 Central 資料庫的方式，以及 [Resolve 回應的 `revision`](docs/knowledge/resolve-revision.md) 的用途與比較方式。 |
 | 理解細部設計 | [`docs/design/`](docs/design/) 保存整合設計、Operational readiness 與 Demo/E2E 規格。 |
 
 修改行為時，先在最小且穩定的測試邊界加入測試。能由 deterministic unit 或 integration tests 精確驗證的規則，不要只依賴 E2E。

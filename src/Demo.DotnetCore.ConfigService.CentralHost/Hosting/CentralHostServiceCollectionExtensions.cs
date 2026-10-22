@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Logging;
 
 namespace Demo.DotnetCore.ConfigService.CentralHost;
 
@@ -51,7 +52,8 @@ public static class CentralHostServiceCollectionExtensions
         services.AddSingleton(static provider => new DistributionControllerDependencies(
             provider.GetRequiredService<StrictJsonRequestReader>(),
             provider.GetRequiredService<IValidator<ResolveConfigurationsRequest>>(),
-            provider.GetRequiredService<DistributionModule>()));
+            provider.GetRequiredService<DistributionModule>(),
+            provider.GetRequiredService<ILogger<DistributionConfigurationsController>>()));
 
         services.Configure<ApiBehaviorOptions>(options =>
             options.SuppressModelStateInvalidFilter = true);

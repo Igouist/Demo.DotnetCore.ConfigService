@@ -190,7 +190,8 @@ internal sealed class CentralConfigRegistration
                 resolved.Values.Count,
                 resolved.MissingFallbackKeyCount,
                 resolved.AttemptCount,
-                _timeProvider.GetElapsedTime(startedTimestamp));
+                _timeProvider.GetElapsedTime(startedTimestamp),
+                resolved.Revision);
         }
         catch (OperationCanceledException) when (callerToken.IsCancellationRequested)
         {

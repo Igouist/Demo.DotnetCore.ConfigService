@@ -78,7 +78,7 @@
 | POC-059 | 已接受（Accepted） | 以 PowerShell 腳本一次啟動 HTTP 演示 |
 | POC-060 | 已接受（Accepted） | 移除完整示範手冊 |
 | POC-061 | 已接受（Accepted） | Central 一律提供 OpenAPI 文件與 Swagger UI |
-| POC-062 | 已接受（Accepted），待實作 | Resolve 回應加上依請求設定鍵計算的 `revision` |
+| POC-062 | 已接受（Accepted） | Resolve 回應加上依請求設定鍵計算的 `revision` |
 | POC-063 | 已接受（Accepted），待實作 | 項目版本記錄 `changedBy` 與 `reason` |
 | POC-064 | 已接受（Accepted），待實作 | 管理介面要求共用的 API Key |
 
@@ -370,7 +370,7 @@ Resolve 使用 POST，讓中央環境與可能較長的設定鍵清單能放在�
 
 包含逐鍵狀態的項目陣列回應已延後，因為 POC 沒有逐鍵回應中繼資料。值字典能更直接對應到 .NET 設定提供者，也讓跨框架的 HTTP 介面更精簡。
 
-**修訂 — 2026-10-22（待實作）：** POC-062 在回應加上 `revision`，作為最後已知可用快取、輪詢與事後追查的共同基礎。逐鍵版本號與時間戳記仍不回傳；值字典與 `missingKeys` 的語意不變。[ADR-0003](../adr/0003-tolerant-client-strict-central-requests.md) 讓 Client 容忍新增的回應欄位。
+**修訂 — 2026-10-22：** POC-062 在回應加上 `revision`，作為最後已知可用快取、輪詢與事後追查的共同基礎。逐鍵版本號與時間戳記仍不回傳；值字典與 `missingKeys` 的語意不變。[ADR-0003](../adr/0003-tolerant-client-strict-central-requests.md) 讓 Client 容忍新增的回應欄位。
 
 ### POC-027 — 管理端目前狀態與歷史紀錄契約
 
@@ -980,7 +980,7 @@ HTTP 演示原本要開三個終端機，依序啟動 Central、Demo A、Demo B�
 
 ### POC-062 — Resolve 回應加上依請求設定鍵計算的 `revision`
 
-**狀態：** 已接受（Accepted），待實作（[#21](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/21)）
+**狀態：** 已接受（Accepted），由 [#21](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues/21) 實作
 
 **日期：** 2026-10-22
 
@@ -993,7 +993,7 @@ POC-026 讓 Resolve 只回傳值與缺少的設定鍵，理由是 POC 只在啟�
 - **這一步的用途：** Client 把 `revision` 寫進啟動成功的 Information 日誌。指紋是單向的，Central 在 Resolve 時把 `revision` 與每個設定鍵的版本號寫進自己的日誌並附上 `traceId`，需要追查時用這筆對照查歷史紀錄。
 - **指紋不同不一定代表值變了：** 服務要求的設定鍵改變，或有人 Set 了相同的值（POC-023 每次 Set 都新增版本），都會改變 `revision`。正確的解讀是「這次拿到的設定或要求的設定鍵與上次不同，值得查一下」。
 
-使用場景、計算方式與注意事項在實作時寫成 `docs/knowledge/resolve-revision.md`。前置條件是 [ADR-0003](../adr/0003-tolerant-client-strict-central-requests.md)：在 Client 容忍未知回應欄位之前加上此欄位，現有 Client 會啟動失敗。設計文件第 4.6 節於實作時同步修訂。
+使用場景、計算方式與注意事項見 [Resolve 回應的 `revision`](../knowledge/resolve-revision.md)。實作時確定的細節：計算輸入是中央環境與 `[設定鍵, 版本號]` 的 JSON 陣列（統一為不變文化特性大寫，避免含分隔字元的設定鍵混淆），取 SHA-256 前 12 個位元組的小寫十六進位，前綴 `r1-`。前置條件是 [ADR-0003](../adr/0003-tolerant-client-strict-central-requests.md)：在 Client 容忍未知回應欄位之前加上此欄位，現有 Client 會啟動失敗。設計文件第 4.6、8.2、9.3 節已同步修訂。
 
 ### POC-063 — 項目版本記錄 `changedBy` 與 `reason`
 

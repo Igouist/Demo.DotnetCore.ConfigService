@@ -82,7 +82,8 @@ internal sealed class StartupConsoleLogger : ILogger
                 if (!TryReadInt32(fields, "ValueCount", out int valueCount)
                     || !TryReadInt32(fields, "MissingFallbackKeyCount", out int missingFallbackKeyCount)
                     || !TryReadInt32(fields, "AttemptCount", out int informationAttemptCount)
-                    || !TryReadDouble(fields, "ElapsedMs", out double informationElapsedMs))
+                    || !TryReadDouble(fields, "ElapsedMs", out double informationElapsedMs)
+                    || !TryReadNullableText(fields, "Revision", out string? revision))
                 {
                     return false;
                 }
@@ -94,7 +95,8 @@ internal sealed class StartupConsoleLogger : ILogger
                     valueCount,
                     missingFallbackKeyCount,
                     attemptCount = informationAttemptCount,
-                    elapsedMs = informationElapsedMs
+                    elapsedMs = informationElapsedMs,
+                    revision
                 };
                 return true;
             case LogLevel.Warning when fields.ContainsKey("UnknownResponseMembers"):

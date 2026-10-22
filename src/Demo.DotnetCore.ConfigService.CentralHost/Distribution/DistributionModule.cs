@@ -22,14 +22,18 @@ internal sealed class DistributionModule
 
         var values = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         var missingKeys = new List<string>();
+        var keyVersions = new List<ResolvedKeyVersion>(keys.Count);
 
         foreach (var key in keys)
         {
             if (!resolutionsByKey.TryGetValue(key.Value, out var storedResolution))
             {
                 missingKeys.Add(key.Value);
+                keyVersions.Add(new ResolvedKeyVersion(key.Value, 0));
                 continue;
             }
+
+            keyVersions.Add(new ResolvedKeyVersion(storedResolution.Key.Value, storedResolution.Version));
 
             if (storedResolution.State == ConfigurationEntryState.Present)
             {
@@ -41,12 +45,17 @@ internal sealed class DistributionModule
             }
         }
 
-        return new ConfigurationResolution(values, missingKeys);
+        return new ConfigurationResolution(
+            values,
+            missingKeys,
+            ResolveRevision.Compute(environment, keyVersions),
+            keyVersions);
     }
 
     private static void ValidateStateValueInvariant(StoredResolution storedResolution)
     {
-        if ((storedResolution.State == ConfigurationEntryState.Present && storedResolution.Value is null) ||
+        if (storedResolution.Version < 1 ||
+            (storedResolution.State == ConfigurationEntryState.Present && storedResolution.Value is null) ||
             (storedResolution.State == ConfigurationEntryState.Removed && storedResolution.Value is not null) ||
             (storedResolution.State is not ConfigurationEntryState.Present and not ConfigurationEntryState.Removed))
         {

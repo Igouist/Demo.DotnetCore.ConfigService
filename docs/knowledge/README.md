@@ -11,3 +11,4 @@
 - [HTTP、ASP.NET Core 8、System.Text.Json 與 HttpClient 的大小限制筆記](dotnet-http-size-limits.md)
 - [.NET Framework 4.8 Receiver 相容性知識筆記](dotnet-framework-48-receiver-compatibility.md)
 - [用外部 SQLite 工具查看 Central 資料庫](sqlite-external-tool-collation.md)
+- [Resolve 回應的 `revision`](resolve-revision.md)
