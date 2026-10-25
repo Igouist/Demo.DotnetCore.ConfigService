@@ -199,7 +199,7 @@ if ($null -eq $dotnetCommand) {
 }
 $dotnet = $dotnetCommand.Source
 
-# 環境變數的優先序高於中央快照（見 HANDOFF 第 3 節），會讓 Demo 的結果與 .http 的預期不同。
+# 環境變數的優先序高於中央快照（見 README 的「核心概念與執行行為」），會讓 Demo 的結果與 .http 的預期不同。
 $overridingVariables = @(Get-ChildItem Env: | Where-Object { $_.Name -match '^Demo(__|:)' })
 if ($overridingVariables.Count -gt 0) {
     $names = ($overridingVariables | ForEach-Object { $_.Name }) -join ', '

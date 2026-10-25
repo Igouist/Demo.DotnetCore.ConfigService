@@ -67,7 +67,7 @@ Consumer Application 啟動後，Central Host 的 Set 或 Remove 不會改變其
 | **Entry Version** | Central Host 編號的不可變歷史狀態。最新版本決定設定值為 Present 或 Removed。 |
 | **Key Selection** | Consumer Application 宣告所需的 keys 與各 key 的 Missing Behavior。Central Host 不保存 Consumer Application 登錄資料。 |
 | **Central Required** | 中央值不存在時，Consumer Application 無法啟動。即使本機 Provider 有同名值，此規則仍適用。 |
-| **Fallback Allowed** | 中央值不存在時，Client 不提供該 key。其他 configuration providers 決定有效值。 |
+| **Fallback Allowed** | 中央值不存在時，Client 不提供該 key。其他 configuration providers 決定有效值。只有合法的中央回應確認缺值才算；連線失敗、HTTP 錯誤、逾時或無效回應都不是改用本機值的理由，Client 會依重試策略重試，最終仍失敗就阻止啟動。 |
 | **Startup snapshot** | Client 成功載入後建立的不可變 Provider。它不會輪詢、接收推送或在執行階段更新。 |
 
 設定來源的優先序由低到高如下：
@@ -78,6 +78,8 @@ Consumer Application 啟動後，Central Host 的 Set 或 Remove 不會改變其
 4. User Secrets
 5. Environment Variables
 6. command-line arguments
+
+空字串、從未建立與已移除是三種不同的狀態：空字串是有效的 Present 值，Resolve 會照常回傳；從未建立與已移除都列為缺值，但已移除的 key 保留完整的 Entry Version 歷史。
 
 精確術語以 [`CONTEXT.md`](CONTEXT.md) 為準。
 
@@ -143,6 +145,8 @@ pwsh ./scripts/start-http-demo.ps1
 ```
 
 腳本建置方案、以新的暫存資料庫啟動 Central，等你在 `.http` 寫入第一版中央值後啟動兩個 Demo，之後在同一個視窗輸入 `A`、`B` 或 `R` 重啟 Demo，輸入 `Q` 或按 `Ctrl+C` 停止全部程序並清理暫存資料。支援 Windows PowerShell 5.1 與 PowerShell 7；Windows PowerShell 的執行方式、指令選單、選用的設定來源優先序展示，以及不使用腳本的手動流程見操作說明。
+
+演示由人員觀察結果，不會自動判定是否通過。啟動腳本結束時會停止它啟動的程序並刪除暫存資料；不使用腳本的手動流程要自行停止程序與清理。
 
 這個短演示使用 `ProjectReference` 連結 Client。使用實際封裝 Client 的完整情境由 `EndToEnd.Tests` 自動驗證；在自己的專案引用套件的方式見 [Client 使用說明](src/Demo.DotnetCore.ConfigService.Client/README.md#引用套件)。
 
@@ -212,6 +216,10 @@ Readiness tests 驗證固定的 `200 ready`／`503 unavailable` contract、launc
 | 研究技術背景 | [`docs/knowledge/`](docs/knowledge/README.md) 收錄 .NET configuration、logging、HTTP limits、Framework compatibility，用外部 SQLite 工具查看 Central 資料庫的方式，以及 [Resolve 回應的 `revision`](docs/knowledge/resolve-revision.md) 的用途與比較方式。 |
 | 理解細部設計 | [`docs/design/`](docs/design/) 保存整合設計、Operational readiness 與 Demo/E2E 規格。 |
 
-修改行為時，先在最小且穩定的測試邊界加入測試。能由 deterministic unit 或 integration tests 精確驗證的規則，不要只依賴 E2E。
+修改行為時，先在最小且穩定的測試邊界加入測試。能由 deterministic unit 或 integration tests 精確驗證的規則，不要只依賴 E2E。調整既有行為時，同步更新受影響的測試與契約文件。
+
+待辦事項與工作進度以 [GitHub Issues](https://github.com/Igouist/Demo.DotnetCore.ConfigService/issues) 與 Pull Requests 為準，repository 內不另外維護進度文件。
+
+`master` 設有 ruleset，把 CI 的「完整驗證 (ubuntu-latest)」與「完整驗證 (windows-latest)」列為合併前的必要檢查。修改 [CI](.github/workflows/ci.yml) 的 job 名稱或矩陣時，要同步更新 ruleset 的必要檢查；否則 Pull Request 會一直等待已不存在的檢查而無法合併。
 
 文件內容衝突時，以 `CONTEXT.md` 定義的術語與已接受的 POC 設計契約為準。ADR 與 Decision Log 說明決策原因；實際程式碼與測試代表目前實作狀態。
